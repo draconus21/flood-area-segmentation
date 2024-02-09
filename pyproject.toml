@@ -52,7 +52,7 @@
 
 [tool.pytest.ini_options]
   addopts  ="--capture=sys --basetemp=testdata_tmp --junitxml=testreports/report.xml"
-  testpaths=[ "benchmark", "." ]
+  testpaths=[ "floodsegment", "." ]
 
 [tool.black]
   extend-exclude='''
