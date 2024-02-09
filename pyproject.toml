@@ -20,7 +20,10 @@
     "opencv-contrib-python",
     "opencv-python",
     "numpy",
-    "seaborn"
+    "seaborn",
+    "torch",
+    "torchvision",
+    "torchaudio"
   ]
   description="Expriments with Kaggle Flood Area Segmentation dataset (https://www.kaggle.com/datasets/faizalkarim/flood-area-segmentation)"
   dynamic=[ "readme" ]
@@ -35,7 +38,7 @@
   test=[ "tox", "coverage", "Sphinx", "twine", "click", "pytest", "black" ]
 
 [project.scripts]
-  floodsegment="floodsegment.cli:main"
+  "floodsegment.generate_split"="floodsegment.dataloader.segment:generate_split_cli"
 
 [project.urls]
   changelog ="https://gitlab.com/draconus21/floodsegment/blob/master/CHANGELOG.md"
