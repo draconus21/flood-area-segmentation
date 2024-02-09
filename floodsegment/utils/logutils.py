@@ -99,9 +99,11 @@ def setupLogging(console_level: str = "INFO", root_level="INFO", log_cfg: str = 
     Setup logging
     """
 
-    # prevent matplotlib logs from flooding the logs
-    if logging.getLogger("matplotlib").level < logging.WARNING:
-        logging.getLogger("matplotlib").setLevel(logging.WARNING)
+    # prevent other libs from flooding the logs
+    libs = ["matplotlib", "PIL"]
+    for lib in libs:
+        if logging.getLogger(lib).level < logging.WARNING:
+            logging.getLogger(lib).setLevel(logging.WARNING)
 
     # does not work
     # plt.style.use("seaborn")
