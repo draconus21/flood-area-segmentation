@@ -12,7 +12,16 @@
     "Natural Language :: English",
     "Programming Language :: Python :: 3.10"
   ]
-  dependencies=[ "pydantic", "click", "matplotlib", "opencv-contrib-python", "opencv-python", "numpy", "seaborn" ]
+  dependencies=[
+    "imageio",
+    "pydantic",
+    "click",
+    "matplotlib",
+    "opencv-contrib-python",
+    "opencv-python",
+    "numpy",
+    "seaborn"
+  ]
   description="Expriments with Kaggle Flood Area Segmentation dataset (https://www.kaggle.com/datasets/faizalkarim/flood-area-segmentation)"
   dynamic=[ "readme" ]
   keywords=[ "floodsegment" ]
