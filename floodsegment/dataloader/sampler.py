@@ -1,6 +1,6 @@
 import math
 import warnings
-from floodsegment.dataloader.segment import FloodDataset
+from floodsegment.dataloader.base import BaseDataset
 from torch.utils.data import RandomSampler
 
 from typing import Iterator, Tuple
@@ -14,7 +14,7 @@ class DictSampler(RandomSampler):
     def __init__(
         # TODO: Create a base Dataset class that uses dicts, and use that for data_source type annotation
         self,
-        data_source: FloodDataset,
+        data_source: BaseDataset,
         mode: str = "train",
         ratio: float = 1.0,
         shuffle: bool = True,
