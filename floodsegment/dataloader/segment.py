@@ -6,11 +6,11 @@ import numpy as np
 import logging
 import imageio.v3 as iio
 from pathlib import Path
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from torch.utils.data import Dataset
 
-from typing import Dict, List
+from typing import Dict, List, Any
 
 from floodsegment import DATA_DIR
 from floodsegment.utils.logutils import setupLogging
@@ -160,11 +160,38 @@ class FloodItem(BaseModel):
         # return load_img(_val)
 
 
+class FloodSample(BaseModel):
+    """
+    Must be init w/ flood_item
+    sample = FloodSample(flood_item=flood_item)
+    """
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True, arbitrary_types_allowed=True)
+
+    image: np.ndarray
+    mask: np.ndarray
+
+    @model_validator(mode="before")
+    @classmethod
+    def m_before(cls, data: Dict):
+        assert "flood_item" in data
+
+        fitem = data.pop("flood_item")
+        assert isinstance(fitem, FloodItem)
+
+        _data = {"image": load_img(fitem.image), "mask": load_img(fitem.mask)}
+
+        return _data
+
+
 class FloodDataset(Dataset):
     def __init__(self, split_file: str | Path, transform_dict: Dict = {}):
-        self.split_file = self._update_split_file(split_file)
+        self.split_file: Path = None
+        self._items: Dict[str, Any] = {}
+
+        self._update_split_file(split_file)
         self.transform_dict = transform_dict
-        self._items_dict = self._populate_items_dict()
+        self._populate_items()
 
     def _update_split_file(self, split_file):
         _sp = Path(split_file).absolute()
@@ -178,8 +205,19 @@ class FloodDataset(Dataset):
         self.split_file = _sp
         logger.info(f"{__class__.__name__} init with split file: {self.split_file}")
 
-    def _populate_items_dict(self):
-        pass
+    def process_flood_item(self, item: FloodItem) -> Dict[str, Any]:
+        sample = FloodSample(flood_item=item)
+
+    def _populate_items(self):
+        split_dict = {}
+        with open(self.split_file, "r") as f:
+            split_dict = json.load(f)
+
+        logger.debug(f"keys found in split_file: {list(split_dict.keys())}")
+        self.items = {}
+        for split, item_list in split_dict.items():
+            self.items[split] = [self.process_flood_item(FloodItem(**fitem)) for fitem in item_list]
+            logger.info(f"loaded {len(self.items[split])} {split} sample")
 
 
 if __name__ == "__main__":

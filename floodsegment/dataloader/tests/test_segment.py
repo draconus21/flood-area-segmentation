@@ -2,8 +2,11 @@
 import csv
 import numpy as np
 from pathlib import Path
-from floodsegment.dataloader.segment import FloodItem
+from floodsegment.dataloader.segment import FloodItem, FloodSample, FloodDataset
 from floodsegment import DATA_DIR
+
+from pytest import mark
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -33,5 +36,21 @@ def test_basic(data_dir: Path = DATA_DIR):
 
     assert fi.image == im_path
     assert fi.mask == Path(ma_path)
-    # assert len(fi.image.shape) == 3
-    # assert len(fi.mask.shape) == 2
+
+    fs = FloodSample(flood_item=fi)
+    assert len(fs.image.shape) == 3
+    assert len(fs.mask.shape) == 2
+
+
+@mark.parametrize("split_file", [DATA_DIR / "flood-default-split.json"])
+def test_FloodDataset(split_file: str | Path):
+    _split_file = split_file if isinstance(split_file, Path) else Path(split_file)
+    _split_file = _split_file.absolute()
+
+    fd = FloodDataset(split_file=split_file)
+
+    assert fd.split_file == _split_file
+    assert fd._items is not None
+    assert "train" in fd.items
+    assert "valid" in fd.items
+    assert "test" in fd.items
