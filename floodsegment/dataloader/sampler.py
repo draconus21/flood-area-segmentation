@@ -1,4 +1,5 @@
 import math
+import warnings
 from floodsegment.dataloader.segment import FloodDataset
 from torch.utils.data import RandomSampler
 
@@ -24,6 +25,10 @@ class DictSampler(RandomSampler):
         ), f"{mode} must be a valid key in data_source._items: {data_source.items.keys()}"
 
         if shuffle and mode != "train":
+            warnings.warn(
+                f"shuffling is available only in train mode. Setting shuffle=False for {mode} mode.",
+                category=RuntimeWarning,
+            )
             logger.warning(f"shuffling is available only in train mode. Setting shuffle=False for {mode} mode.")
             shuffle = False
 

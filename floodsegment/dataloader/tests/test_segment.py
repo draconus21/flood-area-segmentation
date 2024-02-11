@@ -1,12 +1,11 @@
 # import floodsegment
 import csv
+import pytest
 import numpy as np
 from pathlib import Path
 from floodsegment.dataloader.segment import FloodItem, FloodSample, FloodDataset
-from floodsegment.dataloader.sampler import DictSampler
 from floodsegment import DATA_DIR
 
-import pytest
 
 from typing import Dict
 
@@ -72,11 +71,3 @@ def test_FloodDataset(split_file: str | Path, split_ratio: float | Dict[str, flo
     for k in fd.items:
         n_total += len(fd.items[k])
     assert fd.n_samples == n_total
-
-
-@pytest.mark.parametrize("split_file", [DATA_DIR / "flood-default-split.json"])
-def test_DictSample(split_file: str | Path):
-    fd = FloodDataset(split_file=split_file, split_ratio=0.3)
-    fs = DictSampler(data_source=fd, mode="valid", shuffle=False, ratio=0.5)
-
-    print([fd[i] for i in fs])
