@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from torch.utils.data import Dataset
 
-from typing import Dict, List, Any
+from typing import Dict, List, Tuple
 
 from floodsegment import DATA_DIR
 from floodsegment.utils.logutils import setupLogging
@@ -189,7 +189,7 @@ class FloodSample(BaseModel):
 class FloodDataset(Dataset):
     def __init__(self, split_file: str | Path, transform_dict: Dict = {}, split_ratio=float | Dict[str, float]):
         self.split_file: Path = None
-        self.items: Dict[str, Any] = {}
+        self.items: Dict[str, List[FloodSample]] = {}
         self.n_samples: int = 0
 
         self.split_ratio: Dict[str, float] = {}
@@ -197,11 +197,12 @@ class FloodDataset(Dataset):
 
         self._update_from_split_file(split_file=split_file, split_ratio=split_ratio)
 
-    def process_flood_item(self, item: FloodItem) -> Dict[str, Any]:
+    def process_flood_item(self, item: FloodItem) -> FloodSample:
         sample = FloodSample(flood_item=item)
         return sample
 
-    def __getitem__(self, key, idx):
+    def __getitem__(self, idx_tuple: Tuple[str, int]):
+        key, idx = idx_tuple
         return self.items[key][idx]
 
     def __len__(self):
