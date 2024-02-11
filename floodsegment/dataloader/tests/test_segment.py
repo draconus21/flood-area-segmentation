@@ -5,15 +5,13 @@ from pathlib import Path
 from floodsegment.dataloader.segment import FloodItem, FloodSample, FloodDataset
 from floodsegment import DATA_DIR
 
-from pytest import mark
+import pytest
+
+from typing import Dict
 
 import logging
 
 logger = logging.getLogger(__name__)
-
-from floodsegment.utils.logutils import setupLogging
-
-setupLogging(console_level="DEBUG", root_level="DEBUG")
 
 
 def test_basic(data_dir: Path = DATA_DIR):
@@ -42,15 +40,34 @@ def test_basic(data_dir: Path = DATA_DIR):
     assert len(fs.mask.shape) == 2
 
 
-@mark.parametrize("split_file", [DATA_DIR / "flood-default-split.json"])
-def test_FloodDataset(split_file: str | Path):
+@pytest.mark.parametrize("split_file", [DATA_DIR / "flood-default-split.json"])
+@pytest.mark.parametrize(
+    "split_ratio",
+    [
+        {"train": 0.5, "test": 0.5, "valid": 0.5},
+        {"train": 0.5},
+        {"bad_train": 0.1},
+        *list(set([1, *np.random.rand(3)])),
+    ],
+)
+def test_FloodDataset(split_file: str | Path, split_ratio: float | Dict[str, float]):
     _split_file = split_file if isinstance(split_file, Path) else Path(split_file)
     _split_file = _split_file.absolute()
 
-    fd = FloodDataset(split_file=split_file)
+    if isinstance(split_ratio, dict) and "bad_train" in split_ratio:
+        with pytest.warns(RuntimeWarning):
+            FloodDataset(split_file=split_file, split_ratio=split_ratio)
+        return
+
+    fd = FloodDataset(split_file=split_file, split_ratio=split_ratio)
 
     assert fd.split_file == _split_file
     assert fd._items is not None
     assert "train" in fd.items
     assert "valid" in fd.items
     assert "test" in fd.items
+
+    n_total = 0
+    for k in fd.items:
+        n_total += len(fd.items[k])
+    assert fd.n_samples == n_total

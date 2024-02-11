@@ -2,8 +2,8 @@ import click
 import csv
 import json
 import random
+import warnings
 import numpy as np
-import logging
 import imageio.v3 as iio
 from pathlib import Path
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
@@ -14,6 +14,8 @@ from typing import Dict, List, Any
 
 from floodsegment import DATA_DIR
 from floodsegment.utils.logutils import setupLogging
+
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -185,15 +187,24 @@ class FloodSample(BaseModel):
 
 
 class FloodDataset(Dataset):
-    def __init__(self, split_file: str | Path, transform_dict: Dict = {}):
+    def __init__(self, split_file: str | Path, transform_dict: Dict = {}, split_ratio=float | Dict[str, float]):
         self.split_file: Path = None
         self._items: Dict[str, Any] = {}
+        self.n_samples: int = 0
 
-        self._update_split_file(split_file)
+        self.split_ratio: Dict[str, float] = {}
         self.transform_dict = transform_dict
-        self._populate_items()
 
-    def _update_split_file(self, split_file):
+        self._update_from_split_file(split_file=split_file, split_ratio=split_ratio)
+
+    def process_flood_item(self, item: FloodItem) -> Dict[str, Any]:
+        sample = FloodSample(flood_item=item)
+
+    def _update_from_split_file(self, split_file: str | Path, split_ratio: float | Dict[str, float]):
+        """
+        sets: self.split_file
+        and calls self._populate_items()
+        """
         _sp = Path(split_file).absolute()
         logger.debug(f"split_file: {_sp}")
         logger.debug(f"split_file exists: {_sp.exists()}")
@@ -205,19 +216,40 @@ class FloodDataset(Dataset):
         self.split_file = _sp
         logger.info(f"{__class__.__name__} init with split file: {self.split_file}")
 
-    def process_flood_item(self, item: FloodItem) -> Dict[str, Any]:
-        sample = FloodSample(flood_item=item)
+        self._populate_items(split_ratio=split_ratio)
 
-    def _populate_items(self):
+    def _populate_items(self, split_ratio: float | Dict[str, float]):
+        """
+        sets:
+            - self.split_ratio
+            - self.items
+            - self.n_sample
+        """
         split_dict = {}
         with open(self.split_file, "r") as f:
             split_dict = json.load(f)
-
         logger.debug(f"keys found in split_file: {list(split_dict.keys())}")
+
+        self.split_ratio = split_ratio if isinstance(split_ratio, dict) else {k: split_ratio for k in split_dict}
+        assert np.all(
+            [0 <= v <= 1 for k, v in self.split_ratio.items()]
+        ), f"Split ratios must lie in the interval [0, 1]"
+
+        possible_typos = [k for k in self.split_ratio if k not in split_dict]
+        if possible_typos:
+            logger.warning(f"found unused keys in split_ratio: {possible_typos}")
+            warnings.warn(f"found unused keys in split_ratio: {possible_typos}", category=RuntimeWarning)
+
         self.items = {}
         for split, item_list in split_dict.items():
+            # requested fraction of total samples
+            sr = self.split_ratio.get(split, 1)
+            n_items = int(np.ceil(len(item_list) * sr))
+            item_list = item_list[:n_items]
+
             self.items[split] = [self.process_flood_item(FloodItem(**fitem)) for fitem in item_list]
-            logger.info(f"loaded {len(self.items[split])} {split} sample")
+            logger.info(f"loaded {len(self.items[split])} {split} sample with split ratio: {sr:.2f}")
+        self.n_samples = sum(len(self.items[k]) for k in self.items)
 
 
 if __name__ == "__main__":
