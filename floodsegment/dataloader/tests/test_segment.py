@@ -63,7 +63,7 @@ def test_FloodDataset(split_file: str | Path, split_ratio: float | Dict[str, flo
     fd = FloodDataset(split_file=split_file, split_ratio=split_ratio)
 
     assert fd.split_file == _split_file
-    assert fd._items is not None
+    assert fd.items is not None
     assert "train" in fd.items
     assert "valid" in fd.items
     assert "test" in fd.items
