@@ -189,7 +189,7 @@ class FloodSample(BaseModel):
 class FloodDataset(Dataset):
     def __init__(self, split_file: str | Path, transform_dict: Dict = {}, split_ratio=float | Dict[str, float]):
         self.split_file: Path = None
-        self._items: Dict[str, Any] = {}
+        self.items: Dict[str, Any] = {}
         self.n_samples: int = 0
 
         self.split_ratio: Dict[str, float] = {}
@@ -199,6 +199,13 @@ class FloodDataset(Dataset):
 
     def process_flood_item(self, item: FloodItem) -> Dict[str, Any]:
         sample = FloodSample(flood_item=item)
+        return sample
+
+    def __getitem__(self, key, idx):
+        return self.items[key][idx]
+
+    def __len__(self):
+        return self.n_samples
 
     def _update_from_split_file(self, split_file: str | Path, split_ratio: float | Dict[str, float]):
         """
