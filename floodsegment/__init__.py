@@ -2,7 +2,7 @@
 
 __author__ = """Neeth Kunnath"""
 __email__ = "neeth.xavier@gmail.com"
-__version__ = "0.0.0"
+__version__ = "0.0.1"
 
 # constants
 from pathlib import Path

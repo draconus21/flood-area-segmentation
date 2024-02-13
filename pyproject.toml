@@ -31,7 +31,7 @@
   license={ text="MIT license" }
   name="floodsegment"
   requires-python=">=3.10"
-  version="0.0.0"
+  version="0.0.1"
 
 [project.optional-dependencies]
   dev =[ "black", "build", "tox", "coverage", "Sphinx", "twine", "click", "pytest", "black" ]
