@@ -90,8 +90,6 @@ function build_whl() {
 function install_dev() {
     cyan "[install-dev] start"
 
-    green "install pyobjdetect"
-
     # install package locally
     pip install --upgrade pip
     pip install -e $FSEG_DIR[dev]

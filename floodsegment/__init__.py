@@ -2,7 +2,7 @@
 
 __author__ = """Neeth Kunnath"""
 __email__ = "neeth.xavier@gmail.com"
-__version__ = "0.0.0"
+__version__ = "0.0.1"
 
 # constants
 from pathlib import Path
@@ -13,15 +13,13 @@ EXP_DIR = ROOT_DIR / "experiments"
 LOG_DIR = ROOT_DIR / "logs"
 LOG_CFG = ROOT_DIR / "default-logging.json"
 
-from floodsegment.utils.logutils import setupLogging
+from enum import Enum
 
-setupLogging(
-    console_level="INFO",
-    root_level="INFO",
-    log_cfg=LOG_CFG,
-    log_dir=LOG_DIR,
-)
 
-del setupLogging
-del utils
+class Mode(Enum):
+    TRAIN = "TRAIN"
+    VALID = "VALID"
+    TEST = "TEST"
+
+
 del Path

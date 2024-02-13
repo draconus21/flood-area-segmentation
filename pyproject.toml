@@ -1,54 +1,64 @@
 
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+  build-backend="setuptools.build_meta"
+  requires     =[ "setuptools" ]
 
 [project]
-version = "0.0.0"
-name = "floodsegment"
-authors = [{ name = "Neeth Kunnath", email = "neeth.xavier@gmail.com" }]
-description = "Expriments with Kaggle Flood Area Segmentation dataset (https://www.kaggle.com/datasets/faizalkarim/flood-area-segmentation)"
-license = { text = "MIT license" }
-keywords = ["floodsegment"]
-dependencies = ["click", "matplotlib", "opencv-contrib-python", "opencv-python", "numpy", "seaborn"]
-requires-python = ">=3.10"
-dynamic = ["readme"]
-classifiers=[
-        "Development Status :: 2 - Pre-Alpha",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT License",
-        "Natural Language :: English",
-        "Programming Language :: Python :: 3.10",
-    ]
+  authors=[ { name="Neeth Kunnath", email="neeth.xavier@gmail.com" } ]
+  classifiers=[
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3.10"
+  ]
+  dependencies=[
+    "imageio",
+    "pydantic",
+    "click",
+    "matplotlib",
+    "opencv-contrib-python",
+    "opencv-python",
+    "numpy",
+    "seaborn",
+    "torch",
+    "torchvision",
+    "torchaudio"
+  ]
+  description="Expriments with Kaggle Flood Area Segmentation dataset (https://www.kaggle.com/datasets/faizalkarim/flood-area-segmentation)"
+  dynamic=[ "readme" ]
+  keywords=[ "floodsegment" ]
+  license={ text="MIT license" }
+  name="floodsegment"
+  requires-python=">=3.10"
+  version="0.0.1"
 
 [project.optional-dependencies]
-dev = ["black", "build", "tox", "coverage", "Sphinx", "twine", "click", "pytest", "black"]
-test = ["tox", "coverage", "Sphinx", "twine", "click", "pytest", "black"]
+  dev =[ "black", "build", "tox", "coverage", "Sphinx", "twine", "click", "pytest", "black" ]
+  test=[ "tox", "coverage", "Sphinx", "twine", "click", "pytest", "black" ]
 
 [project.scripts]
-floodsegment = "floodsegment.cli:main"
+  "floodsegment.generate_split"="floodsegment.dataloader.segment:generate_split_cli"
 
 [project.urls]
-repository = "https://gitlab.com/draconus21/floodsegment"
-changelog = "https://gitlab.com/draconus21/floodsegment/blob/master/CHANGELOG.md"
+  changelog ="https://gitlab.com/draconus21/floodsegment/blob/master/CHANGELOG.md"
+  repository="https://gitlab.com/draconus21/floodsegment"
 
 [tool.setuptools.dynamic]
-readme = { file = ["README.rst", "CONTRIBUTING.rst", "HISTORY.rst"] }
+  readme={ file=[ "README.rst", "CONTRIBUTING.rst", "HISTORY.rst" ] }
 
 [tool.setuptools.packages.find]
-  include=["floodsegment"]
+  include=[ "floodsegment" ]
 
 [tool.pytest]
-collect_ignore = ["setup.py"]
+  collect_ignore=[ "setup.py" ]
 
 [tool.pytest.ini_options]
   addopts  ="--capture=sys --basetemp=testdata_tmp --junitxml=testreports/report.xml"
-  testpaths=["benchmark", "."]
+  testpaths=[ "floodsegment", "." ]
 
 [tool.black]
-  line-length = 120
-  ignore = "E501"
-  extend-exclude = '''
+  extend-exclude='''
 (
   /(
       \.eggs         # exclude a few common directories in the
@@ -64,3 +74,5 @@ collect_ignore = ["setup.py"]
   )/
 )
 '''
+  ignore="E501"
+  line-length=120
