@@ -1,5 +1,6 @@
 import math
 import warnings
+from floodsegment import Mode
 from floodsegment.dataloader.base import BaseDataset
 from torch.utils.data import RandomSampler
 
@@ -15,21 +16,22 @@ class DictSampler(RandomSampler):
         # TODO: Create a base Dataset class that uses dicts, and use that for data_source type annotation
         self,
         data_source: BaseDataset,
-        mode: str = "train",
+        mode: str | Mode = Mode.TRAIN,
         ratio: float = 1.0,
         shuffle: bool = True,
         **random_sampler_kwargs,
     ):
+        mode = mode if isinstance(mode, Mode) else Mode(mode)
         assert (
             mode in data_source.items
         ), f"{mode} must be a valid key in data_source._items: {data_source.items.keys()}"
 
-        if shuffle and mode != "train":
+        if shuffle and mode != Mode.TRAIN:
             warnings.warn(
-                f"shuffling is available only in train mode. Setting shuffle=False for {mode} mode.",
+                f"shuffling is available only in {Mode.TRAIN}. Setting shuffle=False for {mode} mode.",
                 category=RuntimeWarning,
             )
-            logger.warning(f"shuffling is available only in train mode. Setting shuffle=False for {mode} mode.")
+            logger.warning(f"shuffling is available only in {Mode.TRAIN}. Setting shuffle=False for {mode} mode.")
             shuffle = False
 
         self.mode = mode

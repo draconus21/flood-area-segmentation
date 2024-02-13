@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from typing import Dict, List
 
-from floodsegment import DATA_DIR
+from floodsegment import DATA_DIR, Mode
 from floodsegment.dataloader.base import BaseDataset
 from floodsegment.utils.logutils import setupLogging
 
@@ -66,14 +66,14 @@ def generate_split_cli(split_file_name, data_dir, train_split, valid_split, test
     generate_split(
         split_file_name=split_file_name,
         data_dir=data_dir,
-        splits={"train": train_split, "valid": valid_split, "test": test_split},
+        splits={Mode("TRAIN"): train_split, Mode("VALID"): valid_split, Mode("TEST"): test_split},
     )
 
 
 def generate_split(
     split_file_name: str | Path,
     data_dir: str | Path,
-    splits: Dict[str, float] = {"train": 0.7, "valid": 0.15, "test": 0.15},
+    splits: Dict[Mode, float],
 ):
     path_dict = {}
     r = 0
@@ -124,7 +124,8 @@ def generate_split(
 
     split_json = {}
     cur_idx = 0
-    for split_name, split_len in sizes.items():
+    for mode, split_len in sizes.items():
+        split_name = mode.value
         end_idx = cur_idx + split_len
         split_json[split_name] = m_data[cur_idx:end_idx]
         cur_idx = end_idx

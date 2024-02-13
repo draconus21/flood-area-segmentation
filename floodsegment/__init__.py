@@ -13,6 +13,15 @@ EXP_DIR = ROOT_DIR / "experiments"
 LOG_DIR = ROOT_DIR / "logs"
 LOG_CFG = ROOT_DIR / "default-logging.json"
 
+from enum import Enum
+
+
+class Mode(Enum):
+    TRAIN = "TRAIN"
+    VALID = "VALID"
+    TEST = "TEST"
+
+
 from floodsegment.utils.logutils import setupLogging
 
 setupLogging(

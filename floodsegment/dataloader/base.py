@@ -1,10 +1,10 @@
 import json
-import warnings
 import numpy as np
 from pathlib import Path
 from pydantic import BaseModel
 from torch.utils.data import Dataset
 
+from floodsegment import Mode
 from typing import Dict, List, Tuple
 
 import logging
@@ -68,28 +68,26 @@ class BaseDataset(Dataset):
         """
         split_dict = {}
         with open(self.split_file, "r") as f:
-            split_dict = json.load(f)
+            _dict = json.load(f)
+            for k in _dict:
+                split_dict[Mode(k)] = _dict[k]
         logger.debug(f"keys found in split_file: {list(split_dict.keys())}")
 
-        self.split_ratio = split_ratio if isinstance(split_ratio, dict) else {k: split_ratio for k in split_dict}
+        _split_ratio = split_ratio if isinstance(split_ratio, dict) else {k: split_ratio for k in split_dict}
+        self.split_ratio = {Mode(k): v for k, v in _split_ratio.items()}
         assert np.all(
             [0 <= v <= 1 for k, v in self.split_ratio.items()]
         ), f"Split ratios must lie in the interval [0, 1]"
 
-        possible_typos = [k for k in self.split_ratio if k not in split_dict]
-        if possible_typos:
-            logger.warning(f"found unused keys in split_ratio: {possible_typos}")
-            warnings.warn(f"found unused keys in split_ratio: {possible_typos}", category=RuntimeWarning)
-
         self.items = {}
-        for split, item_list in split_dict.items():
+        for mode, item_list in split_dict.items():
             # requested fraction of total samples
-            sr = self.split_ratio.get(split, 1)
+            sr = self.split_ratio.get(mode, 1)
             n_items = int(np.ceil(len(item_list) * sr))
             item_list = item_list[:n_items]
 
-            self.items[split] = [self.process_split_item(self.split_item_class(**fitem)) for fitem in item_list]
+            self.items[mode] = [self.process_split_item(self.split_item_class(**fitem)) for fitem in item_list]
 
-            logger.info(f"loaded {len(self.items[split])} {split} sample with split ratio: {sr:.2f}")
+            logger.info(f"loaded {len(self.items[mode])} {mode} sample with split ratio: {sr:.2f}")
 
         self.n_samples = sum(len(self.items[k]) for k in self.items)

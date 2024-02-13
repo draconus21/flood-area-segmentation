@@ -4,7 +4,7 @@ import pytest
 import numpy as np
 from pathlib import Path
 from floodsegment.dataloader.segment import FloodItem, FloodSample, FloodDataset
-from floodsegment import DATA_DIR
+from floodsegment import DATA_DIR, Mode
 
 
 from typing import Dict
@@ -44,8 +44,8 @@ def test_basic(data_dir: Path = DATA_DIR):
 @pytest.mark.parametrize(
     "split_ratio",
     [
-        {"train": 0.5, "test": 0.5, "valid": 0.5},
-        {"train": 0.5},
+        {"TRAIN": 0.5, "TEST": 0.5, "VALID": 0.5},
+        {"TRAIN": 0.5},
         {"bad_train": 0.1},
         *list(set([1, *np.random.rand(3)])),
     ],
@@ -55,7 +55,7 @@ def test_FloodDataset(split_file: str | Path, split_ratio: float | Dict[str, flo
     _split_file = _split_file.absolute()
 
     if isinstance(split_ratio, dict) and "bad_train" in split_ratio:
-        with pytest.warns(RuntimeWarning):
+        with pytest.raises(ValueError):
             FloodDataset(split_file=split_file, split_ratio=split_ratio)
         return
 
@@ -63,9 +63,9 @@ def test_FloodDataset(split_file: str | Path, split_ratio: float | Dict[str, flo
 
     assert fd.split_file == _split_file
     assert fd.items is not None
-    assert "train" in fd.items
-    assert "valid" in fd.items
-    assert "test" in fd.items
+    assert Mode("TRAIN") in fd.items
+    assert Mode("VALID") in fd.items
+    assert Mode("TEST") in fd.items
 
     n_total = 0
     for k in fd.items:
