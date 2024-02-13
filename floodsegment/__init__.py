@@ -22,15 +22,4 @@ class Mode(Enum):
     TEST = "TEST"
 
 
-from floodsegment.utils.logutils import setupLogging
-
-setupLogging(
-    console_level="INFO",
-    root_level="INFO",
-    log_cfg=LOG_CFG,
-    log_dir=LOG_DIR,
-)
-
-del setupLogging
-del utils
 del Path
