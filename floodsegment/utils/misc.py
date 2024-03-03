@@ -3,11 +3,31 @@ import json
 import shutil
 import logging
 
+
 from copy import deepcopy
 from pathlib import Path
+from importlib import import_module
 from configparser import ConfigParser
 
 from floodsegment.utils import logutils
+
+from typing import Any, Dict
+
+
+def build_object(name: str, params: Dict[str, Any] = {}) -> Any:
+    """
+    build_object(somemodule.submodule.MyClass) -> from somemodule.submodule import MyClass; return MyClass()
+    build_object(somemodule.submodule.MyClass, params={"my_class_param1": "blah", "my_class_param2": 56}) -> from somemodule.submodule import MyClass; return MyClass(**params)
+    """
+
+    c_name = get_class(name)
+    return c_name(**params)
+
+
+def get_class(name: str) -> Any:
+    module, class_name = name.rsplit(".", 1)
+
+    return import_module(module, class_name)
 
 
 def userInput(prompt, castFunc=None):
