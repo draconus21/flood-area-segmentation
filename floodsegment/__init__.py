@@ -7,11 +7,11 @@ __version__ = "0.0.1"
 # constants
 from pathlib import Path
 
-ROOT_DIR = Path(__file__).parent.parent.absolute()
-DATA_DIR = ROOT_DIR / "data"
-EXP_DIR = ROOT_DIR / "experiments"
-LOG_DIR = ROOT_DIR / "logs"
-LOG_CFG = ROOT_DIR / "default-logging.json"
+PKG_DIR = Path(__file__).parent.parent.absolute()
+DATA_DIR = PKG_DIR / "data"
+EXP_DIR = PKG_DIR / "experiments"
+LOG_DIR = PKG_DIR / "logs"
+LOG_CFG = PKG_DIR / "default-logging.json"
 
 from enum import Enum
 

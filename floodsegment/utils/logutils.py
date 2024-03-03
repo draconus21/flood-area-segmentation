@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 from copy import deepcopy
 
-from floodsegment import ROOT_DIR, LOG_CFG, LOG_DIR
+from floodsegment import PKG_DIR, LOG_CFG, LOG_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -111,11 +111,11 @@ def setupLogging(console_level: str = "INFO", root_level="INFO", log_cfg: str = 
     logstr = []
     try:
         if not log_cfg:
-            log_cfg = os.path.join(ROOT_DIR, LOG_CFG)
+            log_cfg = os.path.join(PKG_DIR, LOG_CFG)
         logstr.append(f"logging config: {log_cfg}")
 
         if not log_dir:
-            log_dir = os.path.join(ROOT_DIR, LOG_DIR)
+            log_dir = os.path.join(PKG_DIR, LOG_DIR)
         logstr.append(f"logs to be written to {log_dir}")
         console_level = console_level.upper()
         root_level = root_level.upper()
