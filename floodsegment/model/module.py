@@ -1,7 +1,7 @@
 import torch.nn as nn
-from floodsegment.utils.misc import build_object
+from floodsegment.utils.builder import build_object
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 
 class BaseModule(nn.Module):
@@ -18,9 +18,9 @@ class BaseModule(nn.Module):
         self.out_channels = out_channels
         self.downscale_factor = downscale_factor
         self.activation = activation if isinstance(activation, nn.Module) else build_object(**activation)
-        # self.normalization = normalization if isinstance(normalization, nn.Module) else get_object(**normalization)
+        # self.normalization = normalization if isinstance(normalization, nn.Module) else build_object(**normalization)
 
-        self.block = None
+        self.block = nn.ModuleList()
 
     def forward(self, x):
         return self.block(x)
@@ -32,8 +32,8 @@ class SimpleCNN(BaseModule):
         in_channels: int,
         out_channels: int,
         downscale_factor: int,
-        activation: str | nn.Module,
-        # normalization: str | nn.module,
+        activation: Dict[str, Any] | nn.Module,
+        # normalization: Dict[str, Any] | nn.Module,
         kernel_size: int = 3,
         **kwargs,
     ):
@@ -60,3 +60,14 @@ class SimpleCNN(BaseModule):
                 self.activation,
             ]
         )
+
+
+class GenericBlock(nn.Module):
+    def __init__(self, layer_config: List[int], base_config: Dict[str, Any]):
+        self.layer_config = layer_config
+        self.base_config: nn.Module = base_config
+
+        self.block = self._build()
+
+    def _build(self) -> nn.ModuleList:
+        pass  # for

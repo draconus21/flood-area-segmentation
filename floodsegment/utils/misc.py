@@ -1,33 +1,18 @@
+import re
 import os
 import json
 import shutil
 import logging
+from glob import glob
 
 
 from copy import deepcopy
 from pathlib import Path
-from importlib import import_module
 from configparser import ConfigParser
 
 from floodsegment.utils import logutils
 
-from typing import Any, Dict
-
-
-def build_object(name: str, params: Dict[str, Any] = {}) -> Any:
-    """
-    build_object(somemodule.submodule.MyClass) -> from somemodule.submodule import MyClass; return MyClass()
-    build_object(somemodule.submodule.MyClass, params={"my_class_param1": "blah", "my_class_param2": 56}) -> from somemodule.submodule import MyClass; return MyClass(**params)
-    """
-
-    c_name = get_class(name)
-    return c_name(**params)
-
-
-def get_class(name: str) -> Any:
-    module, class_name = name.rsplit(".", 1)
-
-    return import_module(module, class_name)
+from typing import List
 
 
 def userInput(prompt, castFunc=None):
@@ -63,6 +48,13 @@ def mkdirs(fname, deleteIfExists=False):
 
     logging.debug(f"\ncreating dir: {p}")
     os.makedirs(p, exist_ok=True)
+
+
+def get_files_in_dir(search_dir: str | Path, match_pattern: str, **iglob_kwargs) -> List[str]:
+    return [
+        str((Path(search_dir) / fname).resolve())
+        for fname in sorted(glob(match_pattern, root_dir=search_dir, **iglob_kwargs))
+    ]
 
 
 def getValue(string, regEx, key):

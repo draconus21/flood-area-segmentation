@@ -23,7 +23,8 @@
     "seaborn",
     "torch",
     "torchvision",
-    "torchaudio"
+    "torchaudio",
+    "pyyaml"
   ]
   description="Expriments with Kaggle Flood Area Segmentation dataset (https://www.kaggle.com/datasets/faizalkarim/flood-area-segmentation)"
   dynamic=[ "readme" ]
