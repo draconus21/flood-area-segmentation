@@ -13,4 +13,5 @@ TESTDATA_DIR = os.path.join(PKG_DIR, "floodsegment", "utils", "tests", "testdata
 
 @pytest.mark.parametrize("model_config", get_files_in_dir(TESTDATA_DIR, "*.yaml", recursive=True))
 def test_construct_mode(model_config):
-    construct_model(model_config)
+    m = construct_model(model_config)
+    logger.info(m)

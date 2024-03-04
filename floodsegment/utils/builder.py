@@ -15,14 +15,14 @@ class SetupConfig(BaseModel):
     model: Dict[str, Any]
 
 
-def build_object(name: str, params: Dict[str, Any] = {}) -> Any:
+def build_object(name: str, params: Dict[str, Any] = {}, overrides: Dict[str, Any] = {}) -> Any:
     """
     build_object(somemodule.submodule.MyClass) -> from somemodule.submodule import MyClass; return MyClass()
     build_object(somemodule.submodule.MyClass, params={"my_class_param1": "blah", "my_class_param2": 56}) -> from somemodule.submodule import MyClass; return MyClass(**params)
     """
 
     c_name = get_class(name)
-    return c_name(**params)
+    return c_name(**{**params, **overrides})
 
 
 def get_class(name: str) -> Any:

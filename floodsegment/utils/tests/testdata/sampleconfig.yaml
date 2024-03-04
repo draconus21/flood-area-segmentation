@@ -2,10 +2,23 @@ model:
   name: 'floodsegment.net.model.SampleModel'
   params:
     cnn:
-      name: 'floodsegment.net.cnn.BaseCNN'
+      name: 'floodsegment.net.cnn.BaseCnn'
       params:
-        layer_config: [1, 2, 3]
-        channel_config: [32, 64, 128]
-        stride_config: [2, 4, 8]
-        dilation_config: [2, 4, 8]
         net_name: 'sample_cnn'
+        input_ch: 3
+        encoder:
+          name: 'floodsegment.net.cnn.GenericCnn'
+          params:
+            net_name: "encoder"
+            layer_config: [1, 2, 3]
+            channel_config: [32, 64, 128]
+            stride_config: [2, 4, 8]
+            #dilation_config: [2, 4, 8]
+            base_config:
+              name: 'floodsegment.net.module.SimpleConvLayer'
+              params:
+                kernel_size: 5
+                activation:
+                  name: torch.nn.ReLU
+                normalization:
+                  name: torch.nn.BatchNorm2d
