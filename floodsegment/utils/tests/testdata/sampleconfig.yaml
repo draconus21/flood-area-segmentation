@@ -1,8 +1,8 @@
 model:
-  name: 'floodsegment.model.model.SampleModel'
+  name: 'floodsegment.net.model.SampleModel'
   params:
     cnn:
-      name: 'floodsegment.model.cnn.BaseCNN'
+      name: 'floodsegment.net.cnn.BaseCNN'
       params:
         layer_config: [1, 2, 3]
         net_name: 'sample_cnn'
