@@ -1,5 +1,5 @@
 model:
-  name: 'floodsegment.model.model.SampleCNN'
+  name: 'floodsegment.model.model.SampleModel'
   params:
     cnn:
       name: 'floodsegment.model.cnn.BaseCNN'

@@ -3,7 +3,7 @@ import torch.nn as nn
 from typing import List
 
 
-class BaseCnn(nn.Module):
+class BaseCNN(nn.Module):
     def __init__(
         self,
         layer_config: List[int],

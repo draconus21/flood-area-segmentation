@@ -12,7 +12,6 @@ class BaseModel(_BaseModel):
 
 
 class SetupConfig(BaseModel):
-
     model: Dict[str, Any]
 
 
@@ -29,9 +28,10 @@ def build_object(name: str, params: Dict[str, Any] = {}) -> Any:
 def get_class(name: str) -> Any:
     assert len(name.rsplit(".", 1)) > 1, f"name must be the full path to the class you wish to get; got {name}"
 
-    module, class_name = name.rsplit(".", 1)
+    module_name, class_name = name.rsplit(".", 1)
 
-    return import_module(module, class_name)
+    module = import_module(module_name)
+    return getattr(module, class_name)
 
 
 def load_yaml(yaml_path: str) -> Dict:
