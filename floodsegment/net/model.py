@@ -10,7 +10,7 @@ class BaseModel(nn.Module):
         super(__class__, self).__init__()
         assert ".cnn." in cnn["name"], f"All cnns must be placed in cnn, got {cnn['name']}"
         self.cnn = build_object(**cnn)
-        self.name = self.__clas__.__name__
+        self.name = self.__class__.__name__
 
     def plot_step(self):
         raise NotImplementedError()

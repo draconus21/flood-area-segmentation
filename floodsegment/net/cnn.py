@@ -21,3 +21,5 @@ class BaseCNN(nn.Module):
             assert len(layer_config) == len(dilation_config), f"dilation config must be the same as layer config"
         if not stride_config:
             assert len(layer_config) == len(stride_config), f"stride config must be the same as layer config"
+
+        self.name = net_name
