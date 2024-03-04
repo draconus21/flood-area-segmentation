@@ -50,4 +50,7 @@ def load_yaml(yaml_path: str) -> Dict:
 def construct_model(model_config: SetupConfig | Dict[str, Any]) -> nn.Module:
     config_dict = model_config if isinstance(model_config, SetupConfig) else SetupConfig(**load_yaml(model_config))
 
+    assert (
+        ".net.model." in config_dict.model["name"]
+    ), f"All models must be placed in model, got {config_dict.model['name']}"
     return build_object(**config_dict.model)
