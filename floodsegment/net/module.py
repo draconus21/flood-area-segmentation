@@ -26,16 +26,12 @@ class BaseModule(_Buildable):
         self,
         in_channels: int,
         out_channels: int,
-        activation: Dict[str, Any] | nn.Module,
-        normalization: Dict[str, Any] | nn.Module,
+        activation: Dict[str, Any],
+        normalization: Dict[str, Any],
         **kwargs,
     ):
-        _activation = activation if isinstance(activation, nn.Module) else build_object(**activation)
-        _normalization = (
-            normalization
-            if isinstance(normalization, nn.Module)
-            else build_object(**normalization, params={"num_features": in_channels})
-        )
+        _activation = build_object(**activation)
+        _normalization = build_object(**normalization, params={"num_features": in_channels})
         super(__class__, self).__init__(
             in_channels=in_channels,
             out_channels=out_channels,
@@ -61,6 +57,7 @@ class SimpleConvLayer(BaseModule):
         **kwargs,
     ):
         assert kernel_size > 0, f"kernel_size must be greater than 1"
+        assert kernel_size % 2 == 1, f"kernel_Size must be odd"
         assert dilation > 0, f"dilation must be greater than 1"
 
         super(__class__, self).__init__(
