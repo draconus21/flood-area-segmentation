@@ -33,7 +33,7 @@ class BaseModule(_Buildable):
         **kwargs,
     ):
         _activation = build_object(**activation)
-        _normalization = build_object(**normalization, params={"num_features": in_channels})
+        _normalization = build_object(**normalization, params={"num_features": out_channels})
         super(__class__, self).__init__(
             in_channels=in_channels,
             out_channels=out_channels,
