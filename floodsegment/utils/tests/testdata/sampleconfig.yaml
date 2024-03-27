@@ -10,6 +10,12 @@ model:
           name: 'floodsegment.net.cnn.GenericCnn'
           params:
             net_name: "encoder"
+            init_kernel_size: 3
+            init_stride: 3
+            init_activation: &activation
+              name: torch.nn.ReLU
+            init_normalization: &normalization
+              name: torch.nn.BatchNorm2d
             layer_config: [1, 2, 3]
             channel_config: [32, 64, 128]
             stride_config: [2, 4, 8]
@@ -18,7 +24,5 @@ model:
               name: 'floodsegment.net.module.SimpleConvLayer'
               params:
                 kernel_size: 5
-                activation:
-                  name: torch.nn.ReLU
-                normalization:
-                  name: torch.nn.BatchNorm2d
+                activation: *activation
+                normalization: *normalization
