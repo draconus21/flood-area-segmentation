@@ -1,6 +1,6 @@
 import torch.nn as nn
 from floodsegment.net.utils import compute_padding
-from floodsegment.net.base import BaseModule
+from floodsegment.net.base import BaseModule, _Buildable
 from floodsegment.utils.builder import build_object
 
 from typing import Any, Dict
