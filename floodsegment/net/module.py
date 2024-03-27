@@ -104,6 +104,7 @@ class SimpleConvLayer(BaseModule):
 
 class GenericBlock(_Buildable):
     """
+    !! DO NOT USE !!
     This class creates a block by stacking modules together.
     The module to be stacked is specified via base_config
 
