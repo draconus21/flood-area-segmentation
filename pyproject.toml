@@ -40,6 +40,7 @@
 
 [project.scripts]
   "floodsegment.generate_split"="floodsegment.dataloader.segment:generate_split_cli"
+  "floodsegment.train"         ="floodsegment.training:train_cli"
 
 [project.urls]
   changelog ="https://gitlab.com/draconus21/floodsegment/blob/master/CHANGELOG.md"

@@ -9,28 +9,44 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class BaseModule(nn.Module):
+class _Buildable(nn.Module):
+    def __init__(self, **kwargs):
+        super(__class__, self).__init__()
+        self.block = self._build(**kwargs)
+
+    def _build(self, **kwargs) -> nn.ModuleList:
+        raise NotImplementedError(f"Please implement this fucntion for your class ({self.__class__.__name__})")
+
+    def forward(self, x):
+        return self.block(x)
+
+
+class BaseModule(_Buildable):
     def __init__(
         self,
         in_channels: int,
         out_channels: int,
         activation: Dict[str, Any] | nn.Module,
         normalization: Dict[str, Any] | nn.Module,
+        **kwargs,
     ):
-        super(__class__, self).__init__()
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-        self.activation = activation if isinstance(activation, nn.Module) else build_object(**activation)
-        self.normalization = (
+        _activation = activation if isinstance(activation, nn.Module) else build_object(**activation)
+        _normalization = (
             normalization
             if isinstance(normalization, nn.Module)
             else build_object(**normalization, params={"num_features": in_channels})
         )
-
-        self.block = nn.ModuleList()
-
-    def forward(self, x):
-        return self.block(x)
+        super(__class__, self).__init__(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            activation=_activation,
+            normalization=_normalization,
+            **kwargs,
+        )
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.activation = _activation
+        self.normalization = _normalization
 
 
 class SimpleConvLayer(BaseModule):
@@ -52,20 +68,44 @@ class SimpleConvLayer(BaseModule):
             out_channels=out_channels,
             activation=activation,
             normalization=normalization,
+            kernel_size=kernel_size,
+            dilation=dilation,
+            **kwargs,
         )
+        self.kernel_size = kernel_size
+        self.dilation = dilation
+        self.kwargs = kwargs
 
+    def _build(
+        self, *, in_channels, out_channels, normalization, activation, kernel_size, dilation, **kwargs
+    ) -> nn.ModuleList:
         padding = compute_padding(kernel_size=kernel_size, dilation=dilation)
         conv_kwargs = {"kernel_size": kernel_size, "padding": padding, "dilation": dilation, **kwargs}
-        self.block = nn.ModuleList(
+        return nn.ModuleList(
             [
-                nn.Conv2d(in_channels=self.in_channels, out_channels=self.out_channels, **conv_kwargs),
-                self.normalization,
-                self.activation,
+                nn.Conv2d(in_channels=in_channels, out_channels=out_channels, **conv_kwargs),
+                normalization,
+                activation,
             ]
         )
 
 
-class GenericBlock(nn.Module):
+class GenericBlock(_Buildable):
+    """
+    This class creates a block by stacking modules together.
+    The module to be stacked is specified via base_config
+
+    in/out_channels: number of input/output channels (see Note below)
+    stride: stride for last block, all other block will have stride 1
+    n_layers: number of times to stack
+    base_config: config to build repeating block
+
+    Note: All `n_layer` layers will use `in_channels` input channels.
+    The first `n_layer`-1 layers will use `in_channels` output channels.
+    Only the `n_layer`th layer will have out channel `out_channels`
+
+    """
+
     def __init__(
         self,
         in_channels: int,
@@ -74,19 +114,15 @@ class GenericBlock(nn.Module):
         n_layers: int,
         base_config: Dict[str, Any],
     ):
-        super(__class__, self).__init__()
-
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.stride = stride
         self.n_layers = n_layers
         self.base_config = base_config
 
-        self.block = nn.ModuleList()
-        self._build()  # populate self.block
+        super(__class__, self).__init__()
 
     def _build(self) -> nn.ModuleList:
-        out_ch = None
         _in_ch = [self.in_channels] * self.n_layers
         _out_ch = _in_ch[:]  # copy
         _stride = [1] * self.n_layers
@@ -95,6 +131,7 @@ class GenericBlock(nn.Module):
         _out_ch[-1] = self.out_channels
         _stride[-1] = self.stride
 
+        _block = nn.ModuleList()
         for i in range(self.n_layers):
             overrides = {
                 "in_channels": _in_ch[i],
@@ -102,4 +139,6 @@ class GenericBlock(nn.Module):
                 "stride": _stride[i],
             }
 
-            self.block.append(build_object(**self.base_config, overrides=overrides))
+            _block.append(build_object(**self.base_config, overrides=overrides))
+
+        return _block
