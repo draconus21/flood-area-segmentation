@@ -4,6 +4,7 @@ import json
 import shutil
 import logging
 from glob import glob
+from functools import wraps
 
 
 from copy import deepcopy
@@ -13,6 +14,39 @@ from configparser import ConfigParser
 from floodsegment.utils import logutils
 
 from typing import List
+
+
+def recursive_wrapper(f):
+    """
+    recurses over args[0]
+
+    The idea is that `f` is a function that performs some operation
+    on a unit element.
+    If you then want to recursive apply that same operation to a list
+    or a dictionary or list of dicts or dicts of lists or any similar
+    combination of this unit element, this wrapper will do that for you.
+
+    So you as a dev need only worry about the unit operation `f`.
+    could look like)
+    """
+
+    @wraps(f)
+    def recursive_f(*args, **kwargs):
+        v = args[0]
+        if isinstance(v, list):
+            res = []
+            for ele in v:
+                res.append(recursive_f(ele, *args[1:], **kwargs))
+            return res
+        elif isinstance(v, dict):
+            res = {}
+            for k in v:
+                res[k] = recursive_f(v[k], *args[1:], **kwargs)
+            return res
+        else:
+            return f(v, *args[1:], **kwargs)
+
+    return recursive_f
 
 
 def userInput(prompt, castFunc=None):

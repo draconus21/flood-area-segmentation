@@ -43,14 +43,11 @@ class GenericCnn(_Buildable):
         # dilation_config: List[int],
         base_config: Dict[str, Any],
         net_name: str,
-        **kwargs,
+        # **kwargs,
     ):
-        if not channel_config:
-            assert len(layer_config) == len(channel_config), f"channel config must be the same as layer config"
-        if not stride_config:
-            assert len(layer_config) == len(stride_config), f"stride config must be the same as layer config"
-        # if not dilation_config:
-        #    assert len(layer_config) == len(dilation_config), f"dilation config must be the same as layer config"
+        assert len(layer_config) == len(channel_config), f"channel config must be the same as layer config"
+        assert len(layer_config) == len(stride_config), f"stride config must be the same as layer config"
+        # assert len(layer_config) == len(dilation_config), f"dilation config must be the same as layer config"
 
         super(__class__, self).__init__(
             input_ch=input_ch,
@@ -62,11 +59,15 @@ class GenericCnn(_Buildable):
             channel_config=channel_config,
             stride_config=stride_config,
             base_config=base_config,
-            **kwargs,
+            # **kwargs,
         )
 
         self.net_name = net_name
         self.input_ch = input_ch
+        self.init_kernel_size = init_kernel_size
+        self.init_stride = init_stride
+        self.init_activation = build_object(**init_activation)
+        self.init_normalization = build_object(**init_normalization, params={"num_features": channel_config[0]})
         self.layer_config = layer_config
         self.channel_config = channel_config
         self.stride_config = stride_config
