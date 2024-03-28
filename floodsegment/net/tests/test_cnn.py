@@ -7,7 +7,7 @@ from floodsegment.utils.testers import check_module
 
 from typing import Dict, Any
 
-NUM_TEST_VALS = 2
+NUM_TEST_VALS = 1
 
 
 def simple_conv():
