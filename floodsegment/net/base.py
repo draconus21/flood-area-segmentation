@@ -38,23 +38,17 @@ class BaseModule(_Buildable):
         normalization: Dict[str, Any],
         **kwargs,
     ):
-        _activation = build_object(**activation)
-        _extra_norm_params = {}
-        if "torch.nn.BatchNorm" in normalization["name"]:
-            _extra_norm_params["num_features"] = out_channels
-
-        _normalization = build_object(**normalization, params=_extra_norm_params)
         super(__class__, self).__init__(
             in_channels=in_channels,
             out_channels=out_channels,
-            activation=_activation,
-            normalization=_normalization,
+            activation=activation,
+            normalization=normalization,
             **kwargs,
         )
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.activation = _activation
-        self.normalization = _normalization
+        self.activation = activation
+        self.normalization = normalization
 
 
 class BaseEDNet(nn.Module):

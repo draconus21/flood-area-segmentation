@@ -30,8 +30,8 @@ def test_SimpleConvLayer(in_channels, out_channels, activation, normalization, k
         c_layer,
         in_channels=in_channels,
         out_channels=out_channels,
-        activation=build_object(**activation),
-        normalization=build_object(**normalization, params={"num_features": out_channels}),
+        activation=activation,
+        normalization=normalization,
         kernel_size=kernel_size,
         dilation=dilation,
         **kwargs,
@@ -86,8 +86,8 @@ def test_GenericBlock(in_channels, out_channels, stride, n_layers):
             mod,
             in_channels=in_channels,
             out_channels=in_channels,
-            activation=build_object(**base_config["params"]["activation"]),
-            normalization=build_object(**base_config["params"]["normalization"], params={"num_features": out_channels}),
+            activation=base_config["params"]["activation"],
+            normalization=base_config["params"]["normalization"],
             kernel_size=ksize,
         )
         check_module(
@@ -104,8 +104,8 @@ def test_GenericBlock(in_channels, out_channels, stride, n_layers):
         last_mod,
         in_channels=in_channels,
         out_channels=out_channels,
-        activation=build_object(**base_config["params"]["activation"]),
-        normalization=build_object(**base_config["params"]["normalization"], params={"num_features": out_channels}),
+        activation=base_config["params"]["activation"],
+        normalization=base_config["params"]["normalization"],
         kernel_size=ksize,
     )
     check_module(

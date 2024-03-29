@@ -1,5 +1,5 @@
 import torch.nn as nn
-from floodsegment.net.utils import compute_padding
+from floodsegment.net.utils import compute_padding, build_normalization
 from floodsegment.net.base import BaseModule, _Buildable
 from floodsegment.utils.builder import build_object
 
@@ -14,18 +14,15 @@ class PatchDownsampling(_Buildable):
     def __init__(
         self, in_channels: int, out_channels: int, *, normalization: Dict[str, Any] = {"name": "torch.nn.BatchNorm2d"}
     ):
-        _normalization = build_object(**normalization, params={"num_features": out_channels})
-        super(__class__, self).__init__(
-            in_channels=in_channels, out_channels=out_channels, normalization=_normalization
-        )
+        super(__class__, self).__init__(in_channels=in_channels, out_channels=out_channels, normalization=normalization)
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.normalization = _normalization
+        self.normalization = normalization
 
-    def _build(self, in_channels: int, out_channels: int, *, normalization: nn.Module) -> nn.ModuleList:
+    def _build(self, in_channels: int, out_channels: int, *, normalization: Dict[str, Any]) -> nn.ModuleList:
         return nn.ModuleList(
             [
-                normalization,
+                build_normalization(**normalization, overrides={"num_features": in_channels}),
                 nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=2, stride=2, bias=False),
             ]
         )
@@ -64,8 +61,8 @@ class SimpleConvLayer(BaseModule):
         self,
         in_channels: int,
         out_channels: int,
-        normalization: nn.Module,
-        activation: nn.Module,
+        activation: Dict[str, Any],
+        normalization: Dict[str, Any],
         kernel_size: int,
         dilation: int,
         **kwargs,
@@ -75,8 +72,8 @@ class SimpleConvLayer(BaseModule):
         return nn.ModuleList(
             [
                 nn.Conv2d(in_channels=in_channels, out_channels=out_channels, **conv_kwargs),
-                normalization,
-                activation,
+                build_normalization(**normalization, overrides={"num_features": out_channels}),
+                build_object(**activation),
             ]
         )
 
@@ -108,7 +105,6 @@ class ConvNeXt(BaseModule):
             kernel_size=kernel_size,
             stride=stride,
             dilation=dilation,
-            normalization_config=normalization,  # to be used for PatchDownsampling
         )
         self.bn_factor = bn_factor
         self.kernel_size = kernel_size
@@ -121,13 +117,12 @@ class ConvNeXt(BaseModule):
         in_channels: int,
         out_channels: int,
         *,
-        activation: nn.Module,
-        normalization: nn.Module,
+        activation: Dict[str, Any],
+        normalization: Dict[str, Any],
         bn_factor: int,
         kernel_size: int,
         stride: int,
         dilation: int,
-        normalization_config: Dict[str, int],  # to be used for PatchDownsampling
     ) -> nn.ModuleList:
         padding = compute_padding(kernel_size=kernel_size, dilation=dilation)
 
@@ -142,7 +137,7 @@ class ConvNeXt(BaseModule):
                     groups=in_channels,
                     dilation=dilation,
                 ),
-                normalization,
+                build_normalization(**normalization, overrides={"num_features": in_channels}),
                 nn.Conv2d(
                     in_channels=in_channels,
                     out_channels=in_channels * bn_factor,
@@ -151,7 +146,7 @@ class ConvNeXt(BaseModule):
                     padding=0,
                     bias=False,
                 ),
-                activation,
+                build_object(**activation),
                 nn.Conv2d(
                     in_channels=in_channels * bn_factor,
                     out_channels=in_channels,
@@ -177,9 +172,7 @@ class ConvNeXt(BaseModule):
             )
         elif stride == 2:
             _block.append(
-                PatchDownsampling(
-                    in_channels=in_channels, out_channels=out_channels, normalization=normalization_config
-                )
+                PatchDownsampling(in_channels=in_channels, out_channels=out_channels, normalization=normalization)
             )
         return _block
 

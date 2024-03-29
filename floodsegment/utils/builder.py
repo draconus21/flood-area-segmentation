@@ -4,7 +4,7 @@ from torchsummary import summary
 from importlib import import_module
 
 from pydantic import BaseModel as _BaseModel
-from pydantic import ConfigDict, field_validator
+from pydantic import ConfigDict
 from typing import Any, Dict
 
 import logging

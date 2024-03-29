@@ -76,7 +76,7 @@ class GenericDecoder(GenericCnn):
         stride_config: List[int],
         # dilation_config: List[int],
         base_config: Dict[str, Any],
-        net_name: str,
+        net_name: str = "GenericDecoder",
     ):
         super(__class__, self).__init__(
             layer_config=layer_config,
@@ -103,7 +103,7 @@ class GenericEncoder(GenericCnn):
         stride_config: List[int],
         # dilation_config: List[int],
         base_config: Dict[str, Any],
-        net_name: str,
+        net_name: str = "GenericEncoder",
         **kwargs,
     ):
         assert len(layer_config) == len(channel_config), f"channel config must be the same as layer config"
