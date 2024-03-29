@@ -1,0 +1,25 @@
+model:
+  name: 'floodsegment.net.model.SampleModel'
+  params:
+    net:
+      name: 'floodsegment.net.network.AENet'
+      params:
+        net_name: 'sample_autoencoder_neXt'
+        input_ch: 3
+        output_ch: 1
+        encoder:
+          name: 'floodsegment.net.cnn.GenericEncoder'
+          params:
+            net_name: "encoder"
+            init_kernel_size: 3
+            init_stride: 3
+            init_activation: &activation
+              name: torch.nn.ReLU
+            init_normalization: &normalization
+              name: torch.nn.BatchNorm2d
+            layer_config: [1, 2, 3]
+            channel_config: [32, 64, 128]
+            stride_config: [2, 2, 2]
+            #dilation_config: [2, 4, 8]
+            base_config:
+              name: 'floodsegment.net.module.ConvNeXt'
