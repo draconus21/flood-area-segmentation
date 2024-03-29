@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-from floodsegment.net.cnn import GenericEncoder
+from floodsegment.net.cnn import GenericEncoder, GenericDecoder
 from floodsegment.utils.builder import build_object
 from floodsegment.utils.testers import check_module
 
@@ -70,8 +70,55 @@ def test_GenericEncoder(
         **{
             **cnn_kwargs,
             **{
-                "init_activation": build_object(**init_activation),
-                "init_normalization": build_object(**init_normalization, params={"num_features": channel_config[0]}),
+                "init_activation": init_activation,
+                "init_normalization": init_normalization,
+                "base_config": base_config,
+            },
+        },
+    )
+
+
+@pytest.mark.parametrize("output_ch", np.random.randint(1, 128, size=NUM_TEST_VALS))
+@pytest.mark.parametrize("out_kernel_size", 2 * np.random.randint(1, 128, size=NUM_TEST_VALS) + 1)
+@pytest.mark.parametrize("out_stride", np.random.randint(1, 128, size=NUM_TEST_VALS))
+@pytest.mark.parametrize("out_activation", [{"name": "torch.nn.ReLU"}])
+@pytest.mark.parametrize("out_normalization", [{"name": "torch.nn.BatchNorm2d"}])
+@pytest.mark.parametrize("layer_config", np.random.randint(1, 128, size=[3, NUM_TEST_VALS]))
+@pytest.mark.parametrize("channel_config", np.random.randint(1, 128, size=[3, NUM_TEST_VALS]))
+@pytest.mark.parametrize("stride_config", np.random.randint(1, 128, size=[3, NUM_TEST_VALS]))
+@pytest.mark.parametrize("base_config", [simple_conv()])
+def test_GenericDecoder(
+    output_ch,
+    out_kernel_size,
+    out_stride,
+    out_activation,
+    out_normalization,
+    layer_config,
+    channel_config,
+    stride_config,
+    base_config,
+):
+    cnn_kwargs = {
+        "output_ch": output_ch,
+        "out_kernel_size": out_kernel_size,
+        "out_stride": out_stride,
+        "out_activation": out_activation,
+        "out_normalization": out_normalization,
+        "layer_config": layer_config,
+        "channel_config": channel_config,
+        "stride_config": stride_config,
+        "base_config": base_config,
+        "net_name": "test",
+    }
+    g_cnn = GenericDecoder(**cnn_kwargs)
+
+    check_module(
+        g_cnn,
+        **{
+            **cnn_kwargs,
+            **{
+                "out_activation": out_activation,
+                "out_normalization": out_normalization,
                 "base_config": base_config,
             },
         },

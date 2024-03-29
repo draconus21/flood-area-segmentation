@@ -98,6 +98,11 @@ class GenericDecoder(GenericCnn):
             **kwargs,
         )
         self.net_name = net_name
+        self.output_ch = output_ch
+        self.out_kernel_size = out_kernel_size
+        self.out_stride = out_stride
+        self.out_activation = out_activation
+        self.out_normalization = out_normalization
 
     def _build(
         self,
@@ -178,12 +183,8 @@ class GenericEncoder(GenericCnn):
         self.input_ch = input_ch
         self.init_kernel_size = init_kernel_size
         self.init_stride = init_stride
-        self.init_activation = build_object(**init_activation)
-        self.init_normalization = build_object(**init_normalization, params={"num_features": channel_config[0]})
-        self.layer_config = layer_config
-        self.channel_config = channel_config
-        self.stride_config = stride_config
-        self.base_config = base_config
+        self.init_activation = init_activation
+        self.init_normalization = init_normalization
 
     def _build(
         self,
