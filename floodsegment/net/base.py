@@ -55,6 +55,7 @@ class BaseEDNet(nn.Module):
     def __init__(
         self,
         input_ch: int,
+        output_ch: int,
         encoder: Dict[str, Any],
         decoder: Dict[str, Any],
         net_name: str = "",
@@ -63,6 +64,7 @@ class BaseEDNet(nn.Module):
 
         self.net_name = net_name
         self.input_ch = input_ch
+        self.output_ch = output_ch
         self.encoder_config = encoder
         self.decoder_config = decoder
         self.encoder = self.build_encoder(self.encoder_config)

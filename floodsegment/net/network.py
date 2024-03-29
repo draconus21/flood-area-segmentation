@@ -7,7 +7,9 @@ from typing import Dict, Any
 
 class AENet(BaseEDNet):
     def __init__(self, input_ch: int, output_ch: int, encoder: Dict[str, Any], net_name: str):
-        super(__class__, self).__init__(input_ch=input_ch, encoder=encoder, decoder={}, net_name=net_name)
+        super(__class__, self).__init__(
+            input_ch=input_ch, output_ch=output_ch, encoder=encoder, decoder={}, net_name=net_name
+        )
 
     def build_decoder(self, decoder_config: Dict[str, Any]) -> nn.Module:
         """

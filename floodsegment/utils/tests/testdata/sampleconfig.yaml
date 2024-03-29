@@ -6,6 +6,7 @@ model:
       params:
         net_name: 'sample_autoencoder'
         input_ch: 3
+        output_ch: 1
         encoder:
           name: 'floodsegment.net.cnn.GenericEncoder'
           params:
