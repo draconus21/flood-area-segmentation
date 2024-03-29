@@ -39,7 +39,7 @@ def remove_act_norm(config: Dict[str, Any]):
 @pytest.mark.parametrize("layer_config", np.random.randint(1, 128, size=[3, NUM_TEST_VALS]))
 @pytest.mark.parametrize("channel_config", np.random.randint(1, 128, size=[3, NUM_TEST_VALS]))
 @pytest.mark.parametrize("stride_config", np.random.randint(1, 128, size=[3, NUM_TEST_VALS]))
-@pytest.mark.parametrize("base_config", [simple_conv])
+@pytest.mark.parametrize("base_config", [simple_conv()])
 def test_GenericCnn(
     input_ch,
     init_kernel_size,
@@ -60,7 +60,7 @@ def test_GenericCnn(
         "layer_config": layer_config,
         "channel_config": channel_config,
         "stride_config": stride_config,
-        "base_config": base_config(),
+        "base_config": base_config,
         "net_name": "test",
     }
     g_cnn = GenericCnn(**cnn_kwargs)
@@ -72,7 +72,7 @@ def test_GenericCnn(
             **{
                 "init_activation": build_object(**init_activation),
                 "init_normalization": build_object(**init_normalization, params={"num_features": channel_config[0]}),
-                "base_config": base_config(),
+                "base_config": base_config,
             },
         },
     )
