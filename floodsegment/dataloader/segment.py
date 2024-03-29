@@ -87,7 +87,7 @@ def generate_split(
     _data_dir = data_dir if isinstance(data_dir, Path) else Path(data_dir)
     _split_file_name = (_data_dir / split_file_name).absolute().with_suffix(".json")
 
-    m_data: List[FloodItem] = []
+    m_data: List[Dict] = []
     with open(_data_dir / "metadata.csv", "r") as m:
         m_reader = csv.reader(m)
         header = m_reader.__next__()
@@ -133,7 +133,7 @@ def generate_split(
     with open(_split_file_name, "w") as s_file:
         json.dump(split_json, s_file, indent=4)
 
-    logger.info(f"split file writted to {_split_file_name}")
+    logger.info(f"split file written to {_split_file_name}")
 
 
 class FloodItem(BaseModel):
