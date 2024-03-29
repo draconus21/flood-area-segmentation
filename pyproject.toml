@@ -35,7 +35,7 @@
   version="0.0.1"
 
 [project.optional-dependencies]
-  dev =[ "black", "build", "tox", "coverage", "Sphinx", "twine", "click", "pytest", "black" ]
+  dev =[ "torch-summary", "black", "build", "tox", "coverage", "Sphinx", "twine", "click", "pytest", "black" ]
   test=[ "tox", "coverage", "Sphinx", "twine", "click", "pytest", "black" ]
 
 [project.scripts]

@@ -14,6 +14,83 @@ class GenericCnn(_Buildable):
     def __init__(
         self,
         *,
+        # Block params
+        layer_config: List[int],
+        channel_config: List[int],
+        stride_config: List[int],
+        # dilation_config: List[int],
+        base_config: Dict[str, Any],
+        **kwargs,
+    ):
+        assert len(layer_config) == len(channel_config), f"channel config must be the same as layer config"
+        assert len(layer_config) == len(stride_config), f"stride config must be the same as layer config"
+        # assert len(layer_config) == len(dilation_config), f"dilation config must be the same as layer config"
+
+        super(__class__, self).__init__(
+            layer_config=layer_config,
+            channel_config=channel_config,
+            stride_config=stride_config,
+            base_config=base_config,
+            **kwargs,
+        )
+
+        self.layer_config = layer_config
+        self.channel_config = channel_config
+        self.stride_config = stride_config
+        self.base_config = base_config
+
+    def _build(
+        self,
+        *,
+        layer_config: List[int],
+        channel_config: List[int],
+        stride_config: List[int],
+        base_config: Dict[str, Any],
+    ) -> nn.ModuleList:
+        out_ch = None
+        _block = nn.ModuleList()
+
+        for i in range(len(layer_config)):
+            in_ch = out_ch or channel_config[0]
+            out_ch = channel_config[i]
+            _kwargs = {
+                "in_channels": in_ch,
+                "out_channels": out_ch,
+                "stride": stride_config[i],
+                "n_layers": layer_config[i],
+                # "dilation": dilation_config[i],
+                "base_config": base_config,
+            }
+
+            _block.append(GenericBlock(**_kwargs))
+        return _block
+
+
+class GenericDecoder(GenericCnn):
+    def __init__(
+        self,
+        *,
+        # Block params
+        layer_config: List[int],
+        channel_config: List[int],
+        stride_config: List[int],
+        # dilation_config: List[int],
+        base_config: Dict[str, Any],
+        net_name: str,
+    ):
+        super(__class__, self).__init__(
+            layer_config=layer_config,
+            channel_config=channel_config,
+            stride_config=stride_config,
+            base_config=base_config,
+        )
+        self.net_name = net_name
+
+
+class GenericEncoder(GenericCnn):
+    def __init__(
+        self,
+        *,
         # base layer params
         input_ch: int,
         init_kernel_size: int,
@@ -27,7 +104,7 @@ class GenericCnn(_Buildable):
         # dilation_config: List[int],
         base_config: Dict[str, Any],
         net_name: str,
-        # **kwargs,
+        **kwargs,
     ):
         assert len(layer_config) == len(channel_config), f"channel config must be the same as layer config"
         assert len(layer_config) == len(stride_config), f"stride config must be the same as layer config"
@@ -43,7 +120,7 @@ class GenericCnn(_Buildable):
             channel_config=channel_config,
             stride_config=stride_config,
             base_config=base_config,
-            # **kwargs,
+            **kwargs,
         )
 
         self.net_name = net_name
@@ -86,17 +163,13 @@ class GenericCnn(_Buildable):
                 **kwargs,
             )
         )
-        for i in range(len(layer_config)):
-            in_ch = out_ch or channel_config[0]
-            out_ch = channel_config[i]
-            kwargs = {
-                "in_channels": in_ch,
-                "out_channels": out_ch,
-                "stride": stride_config[i],
-                "n_layers": layer_config[i],
-                # "dilation": dilation_config[i],
-                "base_config": base_config,
-            }
 
-            _block.append(GenericBlock(**kwargs))
+        _block.extend(
+            super()._build(
+                layer_config=layer_config,
+                channel_config=channel_config,
+                stride_config=stride_config,
+                base_config=base_config,
+            )
+        )
         return _block

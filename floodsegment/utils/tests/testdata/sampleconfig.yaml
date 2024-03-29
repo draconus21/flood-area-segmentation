@@ -7,7 +7,7 @@ model:
         net_name: 'sample_autoencoder'
         input_ch: 3
         encoder:
-          name: 'floodsegment.net.cnn.GenericCnn'
+          name: 'floodsegment.net.cnn.GenericEncoder'
           params:
             net_name: "encoder"
             init_kernel_size: 3

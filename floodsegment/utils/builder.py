@@ -1,5 +1,6 @@
 import yaml
 from torch import nn
+from torchsummary import summary
 from importlib import import_module
 
 from pydantic import BaseModel as _BaseModel
@@ -61,4 +62,6 @@ def construct_model(model_config: SetupConfig | Dict[str, Any]) -> nn.Module:
     assert (
         ".net.model." in config_dict.model["name"]
     ), f"All models must be placed in model, got {config_dict.model['name']}"
-    return build_object(**config_dict.model)
+    model = build_object(**config_dict.model)
+    logger.debug(f"{model.net.net_name}\n{summary(model)}")
+    return model

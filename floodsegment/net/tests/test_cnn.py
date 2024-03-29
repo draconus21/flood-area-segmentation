@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-from floodsegment.net.cnn import GenericCnn
+from floodsegment.net.cnn import GenericEncoder
 from floodsegment.utils.builder import build_object
 from floodsegment.utils.testers import check_module
 
@@ -40,7 +40,7 @@ def remove_act_norm(config: Dict[str, Any]):
 @pytest.mark.parametrize("channel_config", np.random.randint(1, 128, size=[3, NUM_TEST_VALS]))
 @pytest.mark.parametrize("stride_config", np.random.randint(1, 128, size=[3, NUM_TEST_VALS]))
 @pytest.mark.parametrize("base_config", [simple_conv()])
-def test_GenericCnn(
+def test_GenericEncoder(
     input_ch,
     init_kernel_size,
     init_stride,
@@ -63,7 +63,7 @@ def test_GenericCnn(
         "base_config": base_config,
         "net_name": "test",
     }
-    g_cnn = GenericCnn(**cnn_kwargs)
+    g_cnn = GenericEncoder(**cnn_kwargs)
 
     check_module(
         g_cnn,
