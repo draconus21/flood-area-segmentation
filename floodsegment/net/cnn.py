@@ -70,6 +70,12 @@ class GenericDecoder(GenericCnn):
     def __init__(
         self,
         *,
+        # last layer params
+        output_ch: int,
+        out_kernel_size: int,
+        out_stride: int,
+        out_activation: Dict[str, Any],
+        out_normalization: Dict[str, Any],
         # Block params
         layer_config: List[int],
         channel_config: List[int],
@@ -77,14 +83,59 @@ class GenericDecoder(GenericCnn):
         # dilation_config: List[int],
         base_config: Dict[str, Any],
         net_name: str = "GenericDecoder",
+        **kwargs,
     ):
         super(__class__, self).__init__(
+            output_ch=output_ch,
+            out_kernel_size=out_kernel_size,
+            out_stride=out_stride,
+            out_activation=out_activation,
+            out_normalization=out_normalization,
+            layer_config=layer_config,
+            channel_config=channel_config,
+            stride_config=stride_config,
+            base_config=base_config,
+            **kwargs,
+        )
+        self.net_name = net_name
+
+    def _build(
+        self,
+        *,
+        # last layer params
+        output_ch: int,
+        out_kernel_size: int,
+        out_stride: int,
+        out_activation: Dict[str, Any],
+        out_normalization: Dict[str, Any],
+        # Block params
+        layer_config: List[int],
+        channel_config: List[int],
+        stride_config: List[int],
+        # dilation_config: List[int],
+        base_config: Dict[str, Any],
+        **kwargs,
+    ) -> nn.ModuleList:
+        _block = super()._build(
             layer_config=layer_config,
             channel_config=channel_config,
             stride_config=stride_config,
             base_config=base_config,
         )
-        self.net_name = net_name
+
+        # last layer
+        _block.append(
+            SimpleConvLayer(
+                in_channels=channel_config[-1],
+                out_channels=output_ch,
+                activation=out_activation,
+                normalization=out_normalization,
+                kernel_size=out_kernel_size,
+                stride=out_stride,
+                **kwargs,
+            )
+        )
+        return _block
 
 
 class GenericEncoder(GenericCnn):
@@ -137,14 +188,17 @@ class GenericEncoder(GenericCnn):
     def _build(
         self,
         *,
+        # base layer params
         input_ch: int,
         init_kernel_size: int,
         init_stride: int,
         init_activation: Dict[str, Any],
         init_normalization: Dict[str, Any],
+        # Block params
         layer_config: List[int],
         channel_config: List[int],
         stride_config: List[int],
+        # dilation_config: List[int],
         base_config: Dict[str, Any],
         **kwargs,
     ) -> nn.ModuleList:
