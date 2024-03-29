@@ -15,15 +15,21 @@ class BaseCnn(nn.Module):
         self,
         input_ch: int,
         encoder: Dict[str, Any],
-        # decoder: Dict[str, Any],
+        decoder: Dict[str, Any],
         net_name: str = "",
     ):
         super(__class__, self).__init__()
 
         self.net_name = net_name
         self.input_ch = input_ch
-        self.encoder = build_object(**encoder, overrides={"input_ch": self.input_ch})
-        # self.decoder = build_object(**decoder)
+        self.encoder = self.build_encoder(encoder)
+        # self.decoder = self.build_decoder(decoder)
+
+    def build_encoder(self, encoder_config: Dict[str, Any]) -> nn.Module:
+        return build_object(**encoder_config, overrides={"input_ch": self.input_ch})
+
+    def build_decoder(self, decoder_config: Dict[str, Any]) -> nn.Module:
+        return build_object(**decoder_config, overrides={"input_ch": self.input_ch})
 
 
 class GenericCnn(_Buildable):

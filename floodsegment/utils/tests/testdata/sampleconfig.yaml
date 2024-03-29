@@ -26,3 +26,4 @@ model:
                 kernel_size: 5
                 activation: *activation
                 normalization: *normalization
+        decoder: null
