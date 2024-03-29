@@ -6,6 +6,10 @@ from pydantic import BaseModel as _BaseModel
 from pydantic import ConfigDict, field_validator
 from typing import Any, Dict
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class BaseModel(_BaseModel):
     model_config = ConfigDict(validate_assignment=True, extra="forbid")
@@ -22,7 +26,11 @@ def build_object(name: str, params: Dict[str, Any] = {}, overrides: Dict[str, An
     """
 
     c_name = get_class(name)
-    return c_name(**{**params, **overrides})
+    try:
+        return c_name(**{**params, **overrides})
+    except TypeError as e:
+        logger.error(f"{e}, params: {params}, overrides: {overrides}")
+        raise TypeError(f"Caught {e}. See error log for more information.") from e
 
 
 def get_class(name: str) -> Any:
