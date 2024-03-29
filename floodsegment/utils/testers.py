@@ -1,5 +1,4 @@
 import numpy as np
-from floodsegment.utils.misc import recursive_wrapper
 
 
 def check_module(test_layer, **vals_to_test):
