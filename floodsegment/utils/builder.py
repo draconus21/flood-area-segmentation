@@ -1,11 +1,14 @@
-import yaml
 from torch import nn
 from torchsummary import summary
+
+from pathlib import Path
 from importlib import import_module
 
-from pydantic import BaseModel as _BaseModel
+from pydantic import BaseModel as _BaseModel, field_validator
 from pydantic import ConfigDict
 from typing import Any, Dict
+
+from floodsegment.utils.yaml import load_yaml
 
 import logging
 
@@ -16,8 +19,20 @@ class BaseModel(_BaseModel):
     model_config = ConfigDict(validate_assignment=True, extra="forbid")
 
 
-class SetupConfig(BaseModel):
-    model: Dict[str, Any]
+class ModelType(BaseModel):
+    name: str
+    params: Dict[str, Any]
+
+
+class TrainConfig(BaseModel):
+    version: int
+    # dataset: Dict[str, Any]
+    model: ModelType
+
+    @field_validator("version")
+    def v_version(cls, val):
+        assert val == 1, f"version must be 1, got {val}"
+        return val
 
 
 def build_object(name: str, params: Dict[str, Any] = {}, overrides: Dict[str, Any] = {}) -> Any:
@@ -43,25 +58,13 @@ def get_class(name: str) -> Any:
     return getattr(module, class_name)
 
 
-def load_yaml(yaml_path: str) -> Dict:
-    ydict = {}
-    with open(yaml_path, "r") as y:
-        ydict = yaml.full_load(y)
-    assert ydict is not None
-
-    if "_parent_" in ydict:
-        pdict = load_yaml(ydict.pop("_parent_"))
-        ydict = {**pdict, **ydict}
-
-    return ydict
-
-
-def construct_model(model_config: SetupConfig | Dict[str, Any]) -> nn.Module:
-    config_dict = model_config if isinstance(model_config, SetupConfig) else SetupConfig(**load_yaml(model_config))
-
-    assert (
-        ".net.model." in config_dict.model["name"]
-    ), f"All models must be placed in model, got {config_dict.model['name']}"
-    model = build_object(**config_dict.model)
+def construct_model(model_config: ModelType) -> nn.Module:
+    assert ".net.model." in model_config.name, f"All models must be placed in model, got {model_config.name}"
+    model = build_object(**model_config.model_dump(mode="str"))
     logger.debug(f"{model.net.net_name}\n{summary(model)}")
     return model
+
+
+def load_train_config(train_config_path: str | Path) -> TrainConfig:
+    recursive_load_keys = ["model"]
+    return TrainConfig(**load_yaml(train_config_path, recursive_load_keys))

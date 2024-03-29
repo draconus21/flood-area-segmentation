@@ -49,6 +49,38 @@ def recursive_wrapper(f):
     return recursive_f
 
 
+@recursive_wrapper
+def is_file_of_type(fname: str, ext) -> bool:
+    if not isinstance(fname, str) or not fname.endswith(ext):
+        raise ValueError(f"{fname} must be of type {ext}")
+    return True
+
+
+@recursive_wrapper
+def normalize_path(path: str | Path, is_file: bool, ext: str = ""):
+    """
+    This function returns the full path (string) if the file or directory exists.
+    Raises FileNotFoundError if file or directory is not found.
+
+    Args:
+        path:  Input path of file or directory to be found
+        is_file: True if path provided is a file, False if path is a directory.
+
+    """
+    path = Path(path).resolve()
+    secondary_test = path.is_file() if is_file else path.is_dir()
+    test_name = "file" if is_file else "directory"
+
+    if not path.exists():
+        raise FileNotFoundError(f"{path} must be a valid path that exists")
+    if not secondary_test:
+        raise FileNotFoundError(f"{path} must be a {test_name}")
+    if ext:
+        is_file_of_type(str(path), ext)
+
+    return str(path.resolve())
+
+
 def userInput(prompt, castFunc=None):
     var = None
     if castFunc is None:

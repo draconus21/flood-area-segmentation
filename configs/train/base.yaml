@@ -1,5 +1,5 @@
 version: 1
-dataset: null
-sampler: null
-model: null
-criterion: null
+#dataset: null
+#sampler: null
+model: ../model/sampleconvnext.yaml
+#criterion: null
