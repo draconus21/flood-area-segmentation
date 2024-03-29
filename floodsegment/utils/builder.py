@@ -65,6 +65,6 @@ def construct_model(model_config: ModelType) -> nn.Module:
     return model
 
 
-def load_train_config(train_config_path: str | Path) -> TrainConfig:
+def load_train_config(train_config_path: str) -> TrainConfig:
     recursive_load_keys = ["model"]
     return TrainConfig(**load_yaml(train_config_path, recursive_load_keys))
