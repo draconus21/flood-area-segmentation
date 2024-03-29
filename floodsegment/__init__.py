@@ -8,6 +8,7 @@ __version__ = "0.0.1"
 from pathlib import Path
 
 PKG_DIR = Path(__file__).parent.parent.absolute()
+CONFIG_DIR = PKG_DIR / "configs"
 DATA_DIR = PKG_DIR / "data"
 EXP_DIR = PKG_DIR / "experiments"
 LOG_DIR = PKG_DIR / "logs"
