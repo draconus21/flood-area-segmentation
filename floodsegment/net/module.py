@@ -10,6 +10,27 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class PatchDownsampling(_Buildable):
+    def __init__(
+        self, in_channels: int, out_channels: int, *, normalization: Dict[str, Any] = {"name": "torch.nn.BatchNorm2d"}
+    ):
+        _normalization = build_object(**normalization, params={"num_features": out_channels})
+        super(__class__, self).__init__(
+            in_channels=in_channels, out_channels=out_channels, normalization=_normalization
+        )
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.normalization = _normalization
+
+    def _build(self, in_channels: int, out_channels: int, *, normalization: nn.Module) -> nn.ModuleList:
+        return nn.ModuleList(
+            [
+                normalization,
+                nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=2, stride=2, bias=False),
+            ]
+        )
+
+
 class SimpleConvLayer(BaseModule):
     def __init__(
         self,
@@ -22,9 +43,9 @@ class SimpleConvLayer(BaseModule):
         dilation: int = 1,
         **kwargs,
     ):
-        assert kernel_size > 0, f"kernel_size must be greater than 1"
-        assert kernel_size % 2 == 1, f"kernel_Size must be odd"
-        assert dilation > 0, f"dilation must be greater than 1"
+        assert kernel_size > 0, f"kernel_size must be greater than 1, got {kernel_size}"
+        assert kernel_size % 2 == 1, f"kernel_Size must be odd, got {kernel_size}"
+        assert dilation > 0, f"dilation must be greater than 1, got {dilation}"
 
         super(__class__, self).__init__(
             in_channels=in_channels,
@@ -58,6 +79,115 @@ class SimpleConvLayer(BaseModule):
                 activation,
             ]
         )
+
+
+class ConvNeXt(BaseModule):
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        *,
+        activation: Dict[str, Any] = {"name": "torch.nn.GELU"},
+        normalization: Dict[str, Any] = {"name": "torch.nn.BatchNorm2d"},
+        bn_factor: int = 4,
+        kernel_size: int = 7,
+        stride: int = 1,
+        dilation: int = 1,
+    ):
+        assert stride in [1, 2], f"Only strides of 1 and 2 are supported, got {stride}"
+        assert kernel_size > 0, f"kernel_size must be greater than 1, got {kernel_size}"
+        assert kernel_size % 2 == 1, f"kernel_Size must be odd, got {kernel_size}"
+        assert dilation > 0, f"dilation must be greater than 1, got {dilation}"
+
+        super(__class__, self).__init__(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            activation=activation,
+            normalization=normalization,
+            bn_factor=bn_factor,
+            kernel_size=kernel_size,
+            stride=stride,
+            dilation=dilation,
+            normalization_config=normalization,  # to be used for PatchDownsampling
+        )
+        self.bn_factor = bn_factor
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.dilation = dilation
+        self.skip_connection = (stride == 1) and (in_channels == out_channels)
+
+    def _build(
+        self,
+        in_channels: int,
+        out_channels: int,
+        *,
+        activation: nn.Module,
+        normalization: nn.Module,
+        bn_factor: int,
+        kernel_size: int,
+        stride: int,
+        dilation: int,
+        normalization_config: Dict[str, int],  # to be used for PatchDownsampling
+    ) -> nn.ModuleList:
+        padding = compute_padding(kernel_size=kernel_size, dilation=dilation)
+
+        _block = nn.ModuleList(
+            [
+                nn.Conv2d(
+                    in_channels=in_channels,
+                    out_channels=in_channels,
+                    kernel_size=kernel_size,
+                    stride=1,
+                    padding=padding,
+                    groups=in_channels,
+                    dilation=dilation,
+                ),
+                normalization,
+                nn.Conv2d(
+                    in_channels=in_channels,
+                    out_channels=in_channels * bn_factor,
+                    kernel_size=1,
+                    stride=1,
+                    padding=0,
+                    bias=False,
+                ),
+                activation,
+                nn.Conv2d(
+                    in_channels=in_channels * bn_factor,
+                    out_channels=in_channels,
+                    kernel_size=1,
+                    stride=1,
+                    padding=0,
+                    bias=False,
+                ),
+            ]
+        )
+
+        # TODO: Verify this
+        if in_channels != out_channels and stride == 1:
+            _block.append(
+                nn.Conv2d(
+                    in_channels=in_channels,
+                    out_channels=out_channels,
+                    kernel_size=1,
+                    stride=1,
+                    padding=0,
+                    bias=False,
+                )
+            )
+        elif stride == 2:
+            _block.append(
+                PatchDownsampling(
+                    in_channels=in_channels, out_channels=out_channels, normalization=normalization_config
+                )
+            )
+        return _block
+
+    def forward(self, x):
+        out = self.block(x)
+        if self.skip_connection:
+            out = out + x
+        return out
 
 
 class GenericBlock(_Buildable):
