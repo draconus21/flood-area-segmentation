@@ -6,10 +6,10 @@ from typing import Any, Dict
 
 
 class BaseModel(nn.Module):
-    def __init__(self, cnn: Dict[str, Any]):
+    def __init__(self, net: Dict[str, Any]):
         super(__class__, self).__init__()
-        assert ".cnn." in cnn["name"], f"All cnns must be placed in cnn, got {cnn['name']}"
-        self.cnn = build_object(**cnn)
+        assert ".net." in net["name"], f"All cnns must be placed in net, got {net['name']}"
+        self.net = build_object(**net)
         self.name = self.__class__.__name__
 
     def plot_step(self):
@@ -24,5 +24,5 @@ class BaseModel(nn.Module):
 
 
 class SampleModel(BaseModel):
-    def __init__(self, cnn):
-        super(__class__, self).__init__(cnn)
+    def __init__(self, net: Dict[str, Any]):
+        super(__class__, self).__init__(net=net)
