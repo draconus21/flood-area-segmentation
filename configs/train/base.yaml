@@ -1,5 +1,5 @@
 version: 1
-#dataset: null
+dataset: ../dataset/flood.yaml
 #sampler: null
 model: ../model/sampleconvnext.yaml
 #criterion: null

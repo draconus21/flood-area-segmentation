@@ -2,8 +2,7 @@ import pytest
 from pathlib import Path
 from floodsegment import CONFIG_DIR
 from floodsegment.utils.misc import get_files_in_dir
-from floodsegment.utils.yaml import load_yaml
-from floodsegment.utils.builder import construct_model, load_train_config, ModelType
+from floodsegment.utils.builder import construct_model, construct_dataset, load_train_config, BuildableType
 
 import logging
 from floodsegment.utils.logutils import setupLogging
@@ -14,9 +13,15 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize("model_config_path", get_files_in_dir(Path(CONFIG_DIR) / "model", "*.yaml", recursive=True))
-def test_construct_mode(model_config_path):
-    model_config = ModelType(**load_yaml(model_config_path))
-    construct_model(model_config)
+def test_construct_model(model_config_path):
+    construct_model(model_config_path)
+
+
+@pytest.mark.parametrize(
+    "dataset_config_path", get_files_in_dir(Path(CONFIG_DIR) / "dataset", "*.yaml", recursive=True)
+)
+def test_construct_dataset(dataset_config_path):
+    construct_dataset(dataset_config_path)
 
 
 @pytest.mark.parametrize("train_config_path", get_files_in_dir(Path(CONFIG_DIR) / "train", "*.yaml", recursive=True))

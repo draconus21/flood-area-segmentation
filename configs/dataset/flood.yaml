@@ -1,0 +1,5 @@
+name: floodsegment.dataloader.segment.FloodDataset
+params:
+  split_file: ../../data/flood-default-split.json
+  transform_dict: null
+  split_ratio: 1.0

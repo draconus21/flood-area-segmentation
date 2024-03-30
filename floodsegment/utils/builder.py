@@ -1,9 +1,10 @@
 from torch import nn
+from torch.utils.data import Dataset
 from torchsummary import summary
 
-from pathlib import Path
 from importlib import import_module
 
+from pathlib import Path
 from pydantic import BaseModel as _BaseModel, field_validator
 from pydantic import ConfigDict
 from typing import Any, Dict
@@ -19,15 +20,21 @@ class BaseModel(_BaseModel):
     model_config = ConfigDict(validate_assignment=True, extra="forbid")
 
 
-class ModelType(BaseModel):
+class BuildableType(BaseModel):
     name: str
     params: Dict[str, Any]
 
 
 class TrainConfig(BaseModel):
     version: int
-    # dataset: Dict[str, Any]
-    model: ModelType
+    dataset: str
+    model: str
+
+    @field_validator("dataset", "model")
+    def v_valid_file(cls, val):
+        v = Path(val).absolute()
+        assert v.exists() and v.is_file()
+        return str(v)
 
     @field_validator("version")
     def v_version(cls, val):
@@ -58,13 +65,24 @@ def get_class(name: str) -> Any:
     return getattr(module, class_name)
 
 
-def construct_model(model_config: ModelType) -> nn.Module:
+def construct_model(model_config_path: str) -> nn.Module:
+    model_config = BuildableType(**load_yaml(model_config_path))
+
     assert ".net.model." in model_config.name, f"All models must be placed in model, got {model_config.name}"
     model = build_object(**model_config.model_dump(mode="str"))
     logger.debug(f"{model.net.net_name}\n{summary(model)}")
     return model
 
 
+def construct_dataset(dataset_config_path: str) -> Dataset:
+    relative_path_keys = ["params.split_file"]
+    dataset_config = BuildableType(**load_yaml(dataset_config_path, relative_path_keys=relative_path_keys))
+    assert (
+        ".dataloader." in dataset_config.name
+    ), f"All datasets must be placed in dataloader, got {dataset_config.name}"
+    return build_object(**dataset_config.model_dump(mode="str"))
+
+
 def load_train_config(train_config_path: str) -> TrainConfig:
-    recursive_load_keys = ["model"]
-    return TrainConfig(**load_yaml(train_config_path, recursive_load_keys))
+    relative_path_keys = ["model", "dataset"]
+    return TrainConfig(**load_yaml(train_config_path, relative_path_keys=relative_path_keys))

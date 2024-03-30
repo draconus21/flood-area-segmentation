@@ -47,7 +47,7 @@ def unflatten(flat_dict: Dict, /) -> Dict:
     return unflat_dict
 
 
-def load_yaml(yaml_path: str, recursive_load_keys: List[str] = []) -> Dict:
+def load_yaml(yaml_path: str, relative_path_keys: List[str] = [], recursive_load_keys: List[str] = []) -> Dict:
     ydict = {}
     with open(yaml_path, "r") as y:
         ydict = yaml.full_load(y)
@@ -57,12 +57,21 @@ def load_yaml(yaml_path: str, recursive_load_keys: List[str] = []) -> Dict:
         pdict = load_yaml(ydict.pop("_parent_"))
         ydict = {**pdict, **ydict}
 
+    # update relative paths to absolute
+    for k in relative_path_keys:
+        val = get_flat_key(ydict, flat_key=k)
+
+        # if key exists, and val is not absolute path
+        if val and str(Path(val).absolute()) != val:
+            add_flat_key(ydict, flat_key=k, val=str((Path(yaml_path).parent / val).absolute()))
+
     for k in recursive_load_keys:
         val = get_flat_key(ydict, flat_key=k)
 
         if val and isinstance(val, str):
             _p = normalize_path(Path(yaml_path).parent / val, is_file=True, ext=".yaml")
             _recursive_load_keys = [key.replace(f"{k}.", "") for key in recursive_load_keys if k in key]
-            ydict[k] = load_yaml(_p, recursive_load_keys=_recursive_load_keys)
+            _relative_path_keys = [key.replace(f"{k}.", "") for key in relative_path_keys if k in key]
+            ydict[k] = load_yaml(_p, relative_path_keys=_relative_path_keys, recursive_load_keys=_recursive_load_keys)
 
     return ydict
