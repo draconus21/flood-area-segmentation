@@ -1,11 +1,14 @@
 import json
 import numpy as np
 from pathlib import Path
-from pydantic import BaseModel
+from pydantic import field_validator
 from torch.utils.data import Dataset
 
 from floodsegment import Mode
-from typing import Dict, List, Tuple
+from floodsegment.utils.builder import BaseModel
+
+from typing import Dict, List, Tuple, Type
+
 
 import logging
 
@@ -15,18 +18,18 @@ logger = logging.getLogger(__name__)
 class BaseDataset(Dataset):
     def __init__(
         self,
-        split_item_class,
+        split_item_class: Type[BaseModel],
         split_file: str | Path,
         transform_dict: Dict = {},
         split_ratio=float | Dict[str, float],
     ):
         self.split_item_class = split_item_class
 
-        self.split_file: Path = None
-        self.items: Dict[str, List[self.sample_class]] = {}
+        self.split_file: Path = Path()  # will be assined in _update_from_split_file
+        self.items: Dict[str, List[split_item_class]] = {}
         self.n_samples: int = 0
 
-        self.split_ratio: Dict[str, float] = {}
+        self.split_ratio: Dict[Mode, float] = {}
         self.transform_dict = transform_dict
 
         self._update_from_split_file(split_file=split_file, split_ratio=split_ratio)

@@ -2,7 +2,6 @@ import click
 import csv
 import json
 import random
-import warnings
 import numpy as np
 import imageio.v3 as iio
 from pathlib import Path
