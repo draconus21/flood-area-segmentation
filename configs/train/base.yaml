@@ -1,5 +1,7 @@
 version: 1
 dataset: ../dataset/flood.yaml
-#sampler: null
+sampler: ../sampler/flood.yaml
 model: ../model/sampleconvnext.yaml
-#criterion: null
+scheduler: ../scheduler/reduceLR.yaml
+optimizer: ../optimizer/adamw.yaml
+criterion: ../criterion/flood.yaml

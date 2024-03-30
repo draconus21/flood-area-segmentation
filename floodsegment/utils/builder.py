@@ -28,12 +28,16 @@ class BuildableType(BaseModel):
 class TrainConfig(BaseModel):
     version: int
     dataset: str
+    sampler: str
     model: str
+    scheduler: str
+    optimizer: str
+    criterion: str
 
-    @field_validator("dataset", "model")
+    @field_validator("dataset", "model", "scheduler", "optimizer", "criterion")
     def v_valid_file(cls, val):
         v = Path(val).absolute()
-        assert v.exists() and v.is_file()
+        assert v.exists() and v.is_file(), f"Must be a valid file that exists, got {v}"
         return str(v)
 
     @field_validator("version")
@@ -84,5 +88,5 @@ def construct_dataset(dataset_config_path: str) -> Dataset:
 
 
 def load_train_config(train_config_path: str) -> TrainConfig:
-    relative_path_keys = ["model", "dataset"]
+    relative_path_keys = [k for k in TrainConfig.model_fields if k != "version"]
     return TrainConfig(**load_yaml(train_config_path, relative_path_keys=relative_path_keys))
