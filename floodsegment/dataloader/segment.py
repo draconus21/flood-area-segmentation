@@ -5,14 +5,19 @@ import random
 import numpy as np
 import imageio.v3 as iio
 from pathlib import Path
+from torch.utils.tensorboard.writer import SummaryWriter
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from floodsegment import DATA_DIR, Mode
 from floodsegment.dataloader.base import BaseDataset
 from floodsegment.utils.logutils import setupLogging
+
+from floodsegment.utils.viz import quickmatshow_dict
+from floodsegment.utils.torchutils import tensor_to_numpy as to_numpy
+
 
 import logging
 
@@ -203,6 +208,27 @@ class FloodDataset(BaseDataset):
     def process_flood_item(self, item: FloodItem) -> FloodSample:
         sample = FloodSample(flood_item=item)
         return sample
+
+    def visualize(
+        self,
+        sample: FloodItem,
+        plotter: SummaryWriter,
+        *,
+        global_step: Optional[int] = None,
+        close: bool = True,
+        walltime: Optional[float] = None,
+        **kwargs,
+    ):
+        """
+        Visualize a flood sample at given index in FloodDataset
+        """
+        plotter.add_figure(
+            tag="FloodItem",
+            figure=quickmatshow_dict(sample.model_dump(mode="python"), title="Flood Sample", **kwargs),
+            global_step=global_step,
+            close=close,
+            walltime=walltime,
+        )
 
 
 if __name__ == "__main__":

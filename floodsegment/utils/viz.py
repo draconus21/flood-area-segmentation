@@ -10,7 +10,7 @@ from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 
 from floodsegment.utils import misc
 
-from typing import Tuple, List
+from typing import Tuple, List, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -133,6 +133,8 @@ def matshow(mat: np.ndarray | np.ma.MaskedArray, ax=None, title: str = "", cbar:
         suptitle = kwargs.pop("suptitle", f"fig for {title}")
         _, ax = subplots(1, 1, title=suptitle)
         ax = ax.ravel()[0]
+    fig = ax.gcf()
+
     if title:
         ax.set_title(title)
 
@@ -187,6 +189,8 @@ def matshow(mat: np.ndarray | np.ma.MaskedArray, ax=None, title: str = "", cbar:
 
     if not show_axis:
         ax.axis("off")
+
+    return fig
 
 
 def show(*args, **kwargs):
@@ -258,11 +262,26 @@ def subplots(nrows: int, ncols: int, title: str = "", **kwargs):
     return fig, ax
 
 
-def quickmatshow(
+def quickmatshow_list(
     mats: List[np.ndarray | np.ma.MaskedArray],
+    /,
     aspect_ratio: float = 1,
     title: str = "",
     subtitles: List[str] = list(),
+    **kwargs,
+):
+    _dict = {}
+    for i, mat in enumerate(mats):
+        k = subtitles[i] if i < len(subtitles) else i
+        _dict[k] = mat
+    return quickmatshow_dict(_dict, aspect_ratio=aspect_ratio, title=title, **kwargs)
+
+
+def quickmatshow_dict(
+    mats: Dict[str, np.ndarray | np.ma.MaskedArray],
+    /,
+    aspect_ratio: float = 1,
+    title: str = "",
     **kwargs,
 ):
     """
@@ -278,10 +297,11 @@ def quickmatshow(
 
     # add cmap back for matshow
     kwargs["cmap"] = cmap
-    for i, mat in enumerate(mats):
+    for i, k in enumerate(mats):
+        mat = mats[k]
         ax = axList[i // nc, i % nc]
-        subtitle = subtitles[i] if i < len(subtitles) else ""
-        matshow(mat, ax, title=subtitle, **kwargs)
+        matshow(mat, ax, title=k, **kwargs)
+    return fig
 
 
 def addHSlider(fig, triggerFunc, sliderCount, **kwargs):

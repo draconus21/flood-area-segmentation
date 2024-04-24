@@ -1,8 +1,8 @@
 import json
 import numpy as np
 from pathlib import Path
-from pydantic import field_validator
 from torch.utils.data import Dataset
+from torch.utils.tensorboard.writer import SummaryWriter
 
 from floodsegment import Mode
 from floodsegment.utils.builder import BaseModel
@@ -33,6 +33,12 @@ class BaseDataset(Dataset):
         self.transform_dict = transform_dict
 
         self._update_from_split_file(split_file=split_file, split_ratio=split_ratio)
+
+    def visualize(self, sample: BaseModel, plotter: SummaryWriter, **kwargs):
+        """
+        Visualize a sample in BaseDataset
+        """
+        pass
 
     def process_split_item(self, item: BaseModel) -> BaseModel:
         return item

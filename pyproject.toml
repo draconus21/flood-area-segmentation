@@ -24,6 +24,7 @@
     "torch",
     "torchvision",
     "torchaudio",
+    "tensorboard",
     "pyyaml"
   ]
   description="Expriments with Kaggle Flood Area Segmentation dataset (https://www.kaggle.com/datasets/faizalkarim/flood-area-segmentation)"

@@ -27,6 +27,7 @@ class BuildableType(BaseModel):
 
 class TrainConfig(BaseModel):
     version: int
+    name: str
     dataset: str
     sampler: str
     model: str
