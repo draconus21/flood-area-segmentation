@@ -1,5 +1,4 @@
 import os
-import cv2
 import logging
 import numpy as np
 import matplotlib.cm as cm
@@ -10,6 +9,11 @@ from matplotlib.widgets import Slider
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 
 from floodsegment.utils import misc
+
+from typing import Tuple, List
+
+logger = logging.getLogger(__name__)
+
 
 def _saveFig(
     fig,
@@ -39,11 +43,11 @@ def _saveFig(
     saveName = os.path.join(figDir, figName)
     fig.tight_layout()
     fig.savefig(saveName, bbox_inches="tight", **kwargs)
-    logging.debug(f"saved fig as {saveName}")
+    logger.debug(f"saved fig as {saveName}")
 
 
 def saveFigs(figDict: dict, figDir: str, extra: str = None, descStr: str = None, **kwargs):
-    logging.info(f"saving figures in {figDir}")
+    logger.info(f"saving figures in {figDir}")
     for figName, fig in figDict.items():
         _saveFig(fig=fig, figName=figName, figDir=figDir, extra=extra, descStr=descStr, **kwargs)
 
@@ -104,53 +108,65 @@ def legend(ax):
             a.legend()
 
 
-def matshow(ax=None, mat=None, title=None, cbar=True, **kwargs):
+def get_vmin_vmax(
+    mat: np.ndarray | np.ma.MaskedArray, remove_outliers: bool = True, low_p=2, high_p=98
+) -> Tuple[float, float]:
+    if isinstance(mat, np.ma.MaskedArray):
+        if mat.mask.all():  # all values are masked out
+            return 0, 0
+        else:
+            _data = mat.data[mat.mask]
+    else:
+        _data = mat
+
+    if remove_outliers:
+        return float(np.nanpercentile(_data, low_p)), float(np.nanpercentile(_data, high_p))
+    else:
+        return np.nanmin(_data), np.nanmax(_data)
+
+
+def matshow(mat: np.ndarray | np.ma.MaskedArray, ax=None, title: str = "", cbar: bool = True, **kwargs):
     if mat is None:
-        logging.debug(f"no mat provided")
+        logger.debug(f"no mat provided")
         return
     if ax is None:
         suptitle = kwargs.pop("suptitle", f"fig for {title}")
         _, ax = subplots(1, 1, title=suptitle)
         ax = ax.ravel()[0]
+    if title:
+        ax.set_title(title)
 
-    vmin = kwargs.get("vmin", None)
-    vmax = kwargs.get("vmax", None)
-    cmap = kwargs.get("cmap", "gray")
-    mBlur = kwargs.pop("mBlur", True)
     show_axis = kwargs.pop("show_axis", True)
 
+    cmap = kwargs.get("cmap", "gray")
+    if isinstance(cmap, str):
+        cmap_obj = cm.get_cmap(cmap)
+
     # set nans to black for seismic cmap
-    if cmap == "seismic":
+    if cmap_obj.name == "seismic":
         nancolor = kwargs.pop("nan_color", "black")
-        cmap_obj = cm.get_cmap(cmap).copy()
+        cmap_obj = cm.get_cmap(cmap_obj.name).copy()
         cmap_obj.set_bad(color=nancolor)
         kwargs["cmap"] = cmap_obj
 
-    # auto colormap ranges for cmaps
-    if vmin is None or vmax is None:
-        tmp = np.ones(mat.shape, np.uint8)
-        tmp[mat == np.nan] = 0
-        _mat = mat[:].astype(np.float32)
-        if mBlur:
-            tmp = cv2.medianBlur(tmp, 5)
-            _mat = cv2.medianBlur(_mat, 5)
-        _vmin = np.nanmin(_mat[tmp == 1]) if vmin is None else vmin
-        _vmax = np.nanmax(_mat[tmp == 1]) if vmax is None else vmax
-        if cmap == "seismic":
-            # try to set cmap range to +- vmin or +- vmax
-            r = vmin if vmin else vmax
-            # if both vmin and vmax are None, use +- _vmin +- _vmax
-            if not r:
-                r = np.nanmax([np.abs(_vmin), np.abs(_vmax)])
-            r = abs(r)
-            _vmin = -r
-            _vmax = r
+    if "vmin" not in kwargs or "vmax" not in kwargs:
+        _vmin, _vmax = get_vmin_vmax(
+            mat,
+            remove_outliers=kwargs.pop("remove_outliers", True),
+            low_p=kwargs.pop("low_p", 2),
+            high_p=kwargs.pop("high_p", 98),
+        )
 
-        kwargs["vmin"] = _vmin
-        kwargs["vmax"] = _vmax
+        if cmap_obj.name == "seismic":
+            r = np.max(np.abs(_vmin), np.abs(_vmax))
+            _vmin, _vmax = -r, r
+        vmin = kwargs.get("vmin", _vmin)
+        vmax = kwargs.get("vmax", _vmax)
 
-    if title is not None:
-        ax.set_title(title)
+    else:
+        vmin, vmax = kwargs["vmin"], kwargs["vmax"]
+    kwargs["vmin"] = vmin
+    kwargs["vmax"] = vmax
 
     # if nothing is plotted, create a new matshow
     if len(ax.images) == 0:
@@ -185,7 +201,7 @@ def close(*args, **kwargs):
     plt.close(*args, **kwargs)
 
 
-def subplots_n(n, aspect_ratio=1, title=None, **kwargs):
+def subplots_n(n: int, aspect_ratio: float = 1, title: str = "", **kwargs):
     """
     create n subplots while trying to respect the aspect ratio
     aspect ratio := nr/nc
@@ -232,17 +248,23 @@ def subplots_n(n, aspect_ratio=1, title=None, **kwargs):
     return fig, ax, nr, nc
 
 
-def subplots(nrows, ncols, title=None, **kwargs):
+def subplots(nrows: int, ncols: int, title: str = "", **kwargs):
     kwargs.setdefault("sharex", True)
     kwargs.setdefault("sharey", True)
     kwargs.setdefault("squeeze", False)
     fig, ax = plt.subplots(nrows=nrows, ncols=ncols, **kwargs)
-    if title is not None:
+    if title:
         fig.suptitle(title)
     return fig, ax
 
 
-def quickmatshow(mats: list, aspect_ratio=1, title=None, **kwargs):
+def quickmatshow(
+    mats: List[np.ndarray | np.ma.MaskedArray],
+    aspect_ratio: float = 1,
+    title: str = "",
+    subtitles: List[str] = list(),
+    **kwargs,
+):
     """
     matshow all mats in list
     """
@@ -252,13 +274,14 @@ def quickmatshow(mats: list, aspect_ratio=1, title=None, **kwargs):
     n = len(mats)
     fig, axList, nr, nc = subplots_n(n, aspect_ratio=aspect_ratio, title=title)
     # to avoid conflict with axis title
-    kwargs.pop("title", None)
+    kwargs.pop("title", "")
 
     # add cmap back for matshow
     kwargs["cmap"] = cmap
     for i, mat in enumerate(mats):
         ax = axList[i // nc, i % nc]
-        matshow(ax, mat, title=None, **kwargs)
+        subtitle = subtitles[i] if i < len(subtitles) else ""
+        matshow(mat, ax, title=subtitle, **kwargs)
 
 
 def addHSlider(fig, triggerFunc, sliderCount, **kwargs):
