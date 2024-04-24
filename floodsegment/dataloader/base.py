@@ -20,8 +20,8 @@ class BaseDataset(Dataset):
         self,
         split_item_class: Type[BaseModel],
         split_file: str | Path,
+        split_ratio: float | Dict[str, float],
         transform_dict: Dict = {},
-        split_ratio=float | Dict[str, float],
     ):
         self.split_item_class = split_item_class
 
