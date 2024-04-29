@@ -3,7 +3,7 @@ from floodsegment.net.utils import compute_padding, build_normalization
 from floodsegment.net.base import BaseModule, _Buildable
 from floodsegment.utils.builder import build_object
 
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import logging
 
@@ -19,12 +19,54 @@ class PatchDownsampling(_Buildable):
         self.out_channels = out_channels
         self.normalization = normalization
 
-    def _build(self, in_channels: int, out_channels: int, *, normalization: Dict[str, Any]) -> nn.ModuleList:
-        return nn.ModuleList(
-            [
-                build_normalization(**normalization, overrides={"num_features": in_channels}),
-                nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=2, stride=2, bias=False),
-            ]
+    def _build(self, in_channels: int, out_channels: int, *, normalization: Dict[str, Any]) -> nn.Sequential:
+        return nn.Sequential(
+            build_normalization(**normalization, overrides={"num_features": in_channels}),
+            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=2, stride=2, bias=False),
+        )
+
+
+class UpsampleBilinear2d(_Buildable):
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        *,
+        activation: Dict[str, Any] = {"name": "torch.nn.PReLU"},
+        normalization: Dict[str, Any] = {"name": "torch.nn.BatchNorm2d"},
+        size: Tuple[int, int] = (0, 0),
+    ):
+        super(__class__, self).__init__(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            activation=activation,
+            normalization=normalization,
+            size=size,
+        )
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.activation = activation
+        self.normalization = normalization
+
+    def _build(
+        self,
+        in_channels: int,
+        out_channels: int,
+        *,
+        activation: Dict[str, Any],
+        normalization: Dict[str, Any],
+        size: Tuple[int, int],
+    ) -> nn.Sequential:
+        return nn.Sequential(
+            nn.UpsamplingBilinear2d(size) if size else nn.UpsamplingBilinear2d(scale_factor=2),
+            SimpleConvLayer(
+                in_channels=in_channels,
+                out_channels=out_channels,
+                kernel_size=3,
+                padding=1,
+                activation=activation,
+                normalization=normalization,
+            ),
         )
 
 
@@ -66,15 +108,13 @@ class SimpleConvLayer(BaseModule):
         kernel_size: int,
         dilation: int,
         **kwargs,
-    ) -> nn.ModuleList:
-        padding = compute_padding(kernel_size=kernel_size, dilation=dilation)
+    ) -> nn.Sequential:
+        padding = kwargs.get("padding", compute_padding(kernel_size=kernel_size, dilation=dilation))
         conv_kwargs = {"kernel_size": kernel_size, "padding": padding, "dilation": dilation, **kwargs}
-        return nn.ModuleList(
-            [
-                nn.Conv2d(in_channels=in_channels, out_channels=out_channels, **conv_kwargs),
-                build_normalization(**normalization, overrides={"num_features": out_channels}),
-                build_object(**activation),
-            ]
+        return nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, **conv_kwargs),
+            build_normalization(**normalization, overrides={"num_features": out_channels}),
+            build_object(**activation),
         )
 
 
@@ -123,39 +163,37 @@ class ConvNeXt(BaseModule):
         kernel_size: int,
         stride: int,
         dilation: int,
-    ) -> nn.ModuleList:
+    ) -> nn.Sequential:
         padding = compute_padding(kernel_size=kernel_size, dilation=dilation)
 
-        _block = nn.ModuleList(
-            [
-                nn.Conv2d(
-                    in_channels=in_channels,
-                    out_channels=in_channels,
-                    kernel_size=kernel_size,
-                    stride=1,
-                    padding=padding,
-                    groups=in_channels,
-                    dilation=dilation,
-                ),
-                build_normalization(**normalization, overrides={"num_features": in_channels}),
-                nn.Conv2d(
-                    in_channels=in_channels,
-                    out_channels=in_channels * bn_factor,
-                    kernel_size=1,
-                    stride=1,
-                    padding=0,
-                    bias=False,
-                ),
-                build_object(**activation),
-                nn.Conv2d(
-                    in_channels=in_channels * bn_factor,
-                    out_channels=in_channels,
-                    kernel_size=1,
-                    stride=1,
-                    padding=0,
-                    bias=False,
-                ),
-            ]
+        _block = nn.Sequential(
+            nn.Conv2d(
+                in_channels=in_channels,
+                out_channels=in_channels,
+                kernel_size=kernel_size,
+                stride=1,
+                padding=padding,
+                groups=in_channels,
+                dilation=dilation,
+            ),
+            build_normalization(**normalization, overrides={"num_features": in_channels}),
+            nn.Conv2d(
+                in_channels=in_channels,
+                out_channels=in_channels * bn_factor,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                bias=False,
+            ),
+            build_object(**activation),
+            nn.Conv2d(
+                in_channels=in_channels * bn_factor,
+                out_channels=in_channels,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                bias=False,
+            ),
         )
 
         # TODO: Verify this
@@ -218,7 +256,7 @@ class GenericBlock(_Buildable):
 
     def _build(
         self, *, in_channels: int, out_channels: int, stride: int, n_layers: int, base_config: Dict[str, Any]
-    ) -> nn.ModuleList:
+    ) -> nn.ModuleList | nn.Sequential:
         _in_ch = [in_channels] * n_layers
         _out_ch = _in_ch[:]  # copy
         _stride = [1] * n_layers
