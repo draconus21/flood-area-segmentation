@@ -43,9 +43,9 @@ class BaseDataset(Dataset):
     def process_split_item(self, item: BaseModel) -> BaseModel:
         return item
 
-    def __getitem__(self, idx_tuple: Tuple[str, int]):
+    def __getitem__(self, idx_tuple: Tuple[Mode, int]):
         key, idx = idx_tuple
-        return self.process_split_item(self.items[key][idx])
+        return self.process_split_item(self.items[key.value][idx])
 
     def __len__(self):
         return self.n_samples
@@ -79,7 +79,7 @@ class BaseDataset(Dataset):
         with open(self.split_file, "r") as f:
             _dict = json.load(f)
             for k in _dict:
-                split_dict[Mode(k)] = _dict[k]
+                split_dict[Mode(k).value] = _dict[k]
         logger.debug(f"keys found in split_file: {list(split_dict.keys())}")
 
         _split_ratio = split_ratio if isinstance(split_ratio, dict) else {k: split_ratio for k in split_dict}

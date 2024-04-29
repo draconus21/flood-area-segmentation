@@ -21,7 +21,7 @@ class DictSampler(RandomSampler):
         shuffle: bool = True,
         **random_sampler_kwargs,
     ):
-        mode = mode if isinstance(mode, Mode) else Mode(mode)
+        mode = mode.value if isinstance(mode, Mode) else Mode(mode).value
         assert (
             mode in data_source.items
         ), f"{mode} must be a valid key in data_source._items: {data_source.items.keys()}"

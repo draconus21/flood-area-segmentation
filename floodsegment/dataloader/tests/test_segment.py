@@ -63,9 +63,9 @@ def test_FloodDataset(split_file: str | Path, split_ratio: float | Dict[str, flo
 
     assert fd.split_file == _split_file
     assert fd.items is not None
-    assert Mode("TRAIN") in fd.items
-    assert Mode("VALID") in fd.items
-    assert Mode("TEST") in fd.items
+    assert Mode("TRAIN").value in fd.items
+    assert Mode("VALID").value in fd.items
+    assert Mode("TEST").value in fd.items
 
     n_total = 0
     for k in fd.items:

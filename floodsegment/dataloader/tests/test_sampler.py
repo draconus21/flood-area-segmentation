@@ -18,6 +18,8 @@ def test_DictSample(split_file: str | Path, shuffle: bool, ratio: float, mode: s
             fs = DictSampler(data_source=fd, mode=mode, shuffle=shuffle, ratio=ratio)
         return
 
+    assert mode in fd.items, f"{mode} not found in items: {fd.items.keys()}"
+
     if Mode(mode) != Mode.TRAIN and shuffle == True:
         with pytest.warns(RuntimeWarning):
             fs = DictSampler(data_source=fd, mode=mode, shuffle=shuffle, ratio=ratio)
@@ -26,10 +28,15 @@ def test_DictSample(split_file: str | Path, shuffle: bool, ratio: float, mode: s
 
     idx_list = []
     for key, idx in fs:
-        assert key == Mode(mode)
+        assert key == Mode(mode).value
         idx_list.append(idx)
 
     if not shuffle:
-        assert all([idx_list[i] == idx_list[i - 1] + 1] for i in range(1, len(idx_list)))
+        assert all(
+            [idx_list[i] == idx_list[i - 1] + 1] for i in range(1, len(idx_list))
+        ), "Expecting unshuffled items, but they  are shuffled"
     else:
-        assert any([idx_list[i] != idx_list[i - 1] + 1] for i in range(1, len(idx_list)))
+        # NOTE: if this assert fails, try running it again
+        assert any(
+            [idx_list[i] != idx_list[i - 1] + 1] for i in range(1, len(idx_list))
+        ), "Expecting shuffled items, but they  are not shuffled"
