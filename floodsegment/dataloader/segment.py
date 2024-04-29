@@ -16,7 +16,6 @@ from floodsegment.dataloader.base import BaseDataset
 from floodsegment.utils.logutils import setupLogging
 
 from floodsegment.utils.viz import quickmatshow_dict
-from floodsegment.utils.torchutils import tensor_to_numpy as to_numpy
 
 
 import logging
@@ -205,7 +204,7 @@ class FloodDataset(BaseDataset):
             split_ratio=split_ratio,
         )
 
-    def process_flood_item(self, item: FloodItem) -> FloodSample:
+    def process_split_item(self, item: FloodItem) -> FloodSample:
         sample = FloodSample(flood_item=item)
         return sample
 

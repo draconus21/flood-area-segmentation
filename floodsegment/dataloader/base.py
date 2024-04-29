@@ -45,7 +45,7 @@ class BaseDataset(Dataset):
 
     def __getitem__(self, idx_tuple: Tuple[str, int]):
         key, idx = idx_tuple
-        return self.items[key][idx]
+        return self.process_split_item(self.items[key][idx])
 
     def __len__(self):
         return self.n_samples
@@ -95,7 +95,7 @@ class BaseDataset(Dataset):
             n_items = int(np.ceil(len(item_list) * sr))
             item_list = item_list[:n_items]
 
-            self.items[mode] = [self.process_split_item(self.split_item_class(**fitem)) for fitem in item_list]
+            self.items[mode] = [self.split_item_class(**fitem) for fitem in item_list]
 
             logger.info(f"loaded {len(self.items[mode])} {mode} sample with split ratio: {sr:.2f}")
 
