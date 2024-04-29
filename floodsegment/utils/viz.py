@@ -133,7 +133,7 @@ def matshow(mat: np.ndarray | np.ma.MaskedArray, ax=None, title: str = "", cbar:
         suptitle = kwargs.pop("suptitle", f"fig for {title}")
         _, ax = subplots(1, 1, title=suptitle)
         ax = ax.ravel()[0]
-    fig = ax.gcf()
+    fig = ax.get_figure()
 
     if title:
         ax.set_title(title)

@@ -5,8 +5,8 @@ from logging import getLogger
 
 from torch.utils.tensorboard.writer import SummaryWriter
 
-from floodsegment import DATA_DIR
-from floodsegment.utils.builder import load_train_config
+from floodsegment import DATA_DIR, Mode
+from floodsegment.utils.builder import load_train_config, construct_dataset
 from floodsegment.utils.logutils import setupLogging
 
 
@@ -23,7 +23,6 @@ logger = getLogger(__name__)
     type=click.Path(exists=True, file_okay=True, dir_okay=False),
     help="path to training yaml",
 )
-@click.option("-d", "--data-dir", required=True, type=click.Path(), default=DATA_DIR, help="path to root dir")
 @click.option(
     "-e",
     "--exp-dir",
@@ -43,11 +42,11 @@ logger = getLogger(__name__)
 @click.option("-n", "--exp-name", required=True, default="flood-exp", help="Experiment name")
 @click.option("-p", "--port", required=True, default=8090, help="tensorboard port")
 @click.option("-ne", "--n-epochs", required=True, default=100, help="Number of epochs")
-def train_cli(config, data_dir, exp_dir, log_level, exp_name, port, n_epochs):
-    train(config, data_dir, exp_dir, log_level, exp_name, port, n_epochs)
+def train_cli(config, exp_dir, log_level, exp_name, port, n_epochs):
+    train(config, exp_dir, log_level, exp_name, port, n_epochs)
 
 
-def train(config, data_dir, exp_dir, log_level, exp_name, port, n_epochs):
+def train(config, exp_dir, log_level, exp_name, port, n_epochs):
     setupLogging(log_level)
 
     # helpful setting for debugging
@@ -62,6 +61,11 @@ def train(config, data_dir, exp_dir, log_level, exp_name, port, n_epochs):
 
     plotters = setup_tboard(tboard_dir, port)
 
+    # get dataset
+    dataset = construct_dataset(dataset_config_path=train_config.dataset)
+
+    dataset.visualize(dataset[Mode.TRAIN, 0], plotters["data"])
+
 
 def setup_tboard(tboard_dir: str, port: int, plotter_names: List[str] = ["data"]) -> Dict[str, SummaryWriter]:
     logger.info(f"tensorboard dir: {tboard_dir}")
@@ -69,3 +73,7 @@ def setup_tboard(tboard_dir: str, port: int, plotter_names: List[str] = ["data"]
     plotters = {k: SummaryWriter(str(Path(tboard_dir) / k)) for k in plotter_names}
     logger.info(f"plotters: {plotters.keys()}")
     return plotters
+
+
+if __name__ == "__main__":
+    train_cli()

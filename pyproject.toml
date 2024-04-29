@@ -24,6 +24,7 @@
     "torch",
     "torchvision",
     "torchaudio",
+    "protobuf<=4.25",        # temporary fix https://github.com/tensorflow/tensorboard/issues/6808
     "tensorboard",
     "pyyaml"
   ]
