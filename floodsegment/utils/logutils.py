@@ -125,6 +125,12 @@ def setupLogging(console_level: str = "INFO", root_level="INFO", log_cfg: str = 
                 os.makedirs(log_dir)
             with open(log_cfg, "rt") as f:
                 config = json.load(f)
+
+                if logging.getLevelName(console_level) < logging.getLevelName(root_level):
+                    logstr.append(f"root logger level [{root_level}] < [{console_level}] console logger level.")
+                    logstr.append(f"overriding provided root log level: {root_level} -> {console_level}")
+                    root_level = console_level
+
                 config["root"]["level"] = root_level
                 logstr.append(f"root log level: {root_level}")
 
