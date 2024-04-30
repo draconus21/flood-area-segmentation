@@ -1,7 +1,9 @@
+import torch
 import torch.nn as nn
+from torch import randn as trandn
 from floodsegment.utils.builder import build_object
 
-from typing import Any, Dict
+from typing import Any, Dict, OrderedDict, Tuple, List
 
 """
 Heirarchy
@@ -13,12 +15,26 @@ Model -> Net [UNet] -> Cnn [Encoder/Decoder] -> Blocks [GenericBlock] -> Module/
 class _Buildable(nn.Module):
     def __init__(self, **kwargs):
         super(__class__, self).__init__()
-        self.block = self._build(**kwargs)
+        self.block: nn.ModuleList | nn.Sequential = self._build(**kwargs)
 
-    def _build(self, **kwargs) -> nn.ModuleList:
+    def _build(self, **kwargs) -> nn.ModuleList | nn.Sequential:
         raise NotImplementedError(f"Please implement this fucntion for your class ({self.__class__.__name__})")
 
-    def forward(self, x):
+    def out_key_at(self, idx: int):
+        return f"{self}_{idx}"
+
+    def __repr__(self):
+        return self.__class__.__name__
+
+    def forward(self, x, keep_interim_outs=False) -> torch.Tensor | OrderedDict[str, torch.Tensor]:
+        outs = OrderedDict()
+        outs[self.out_key_at(0)] = self.block[0](x)
+        for i in range(1, len(self)):
+            outs[self.out_key_at(i)] = self.block[i](outs[self.out_key_at(i - 1)])
+
+        return outs if keep_interim_outs else outs[self.out_key_at(len(self) - 1)]
+
+    def fxorward(self, x):
         return self.block(x)
 
     def __len__(self):
@@ -54,24 +70,58 @@ class BaseModule(_Buildable):
 class BaseEDNet(nn.Module):
     def __init__(
         self,
-        input_ch: int,
-        output_ch: int,
+        img_size: Tuple[int, int],  # height, widith
+        input_names: List[str],
+        output_names: List[str],
         encoder: Dict[str, Any],
         decoder: Dict[str, Any],
         net_name: str = "",
     ):
+        assert len(img_size) == 2, f"img_size must be [h, w], got {img_size}"
         super(__class__, self).__init__()
 
         self.net_name = net_name
-        self.input_ch = input_ch
-        self.output_ch = output_ch
+        self.input_names = input_names
+        self.output_names = output_names
+        self.img_size = img_size
+        self.input_ch = len(self.input_names)
+        self.output_ch = len(self.output_names)
         self.encoder_config = encoder
         self.decoder_config = decoder
+
         self.encoder = self.build_encoder(self.encoder_config)
+        self.encoder_out_sizes = self.encoder.get_out_sizes(input_size=[self.input_ch, *self.img_size])
+
         self.decoder = self.build_decoder(self.decoder_config)
 
+        self.validate_io()
+
+    def forward(self, input_dict: Dict[str, Any]) -> OrderedDict[str, Any]:
+        assert all(
+            [input_name in input_dict for input_name in self.input_names]
+        ), f"Expecting inputs: {self.input_names}, but got {input_dict.keys()}"
+
+        input_tensor = torch.cat([input_dict[in_name] for in_name in self.input_names], dim=1)
+
+        return self.decoder(self.encoder(input_tensor))
+
+    def validate_io(self):
+        inputs, outputs = self.dummies()
+        assert self.input_names == inputs.keys(), f"Expecting inputs {self.input_names}, got {inputs.keys()}"
+        assert self.output_names == outputs.keys(), f"Expecting inputs {self.output_names}, got {outputs.keys()}"
+
     def build_encoder(self, encoder_config: Dict[str, Any]) -> nn.Module:
-        return build_object(**encoder_config, overrides={"input_ch": self.input_ch})
+        return build_object(**encoder_config, overrides={"input_size": [self.input_ch, *self.img_size]})
 
     def build_decoder(self, decoder_config: Dict[str, Any]) -> nn.Module:
         return build_object(**decoder_config, overrides={"input_ch": self.input_ch})
+
+    def get_dummy_inputs(self) -> Dict[str, Any]:
+        return {x: trandn(1, 1, *self.img_size) for x in self.input_names}
+
+    def get_dummy_outputs(self) -> OrderedDict[str, Any]:
+        self.eval()
+        return self.forward(self.get_dummy_inputs())
+
+    def dummies(self) -> Tuple[Dict[str, Any], OrderedDict[str, Any]]:
+        return self.get_dummy_inputs(), self.get_dummy_outputs()

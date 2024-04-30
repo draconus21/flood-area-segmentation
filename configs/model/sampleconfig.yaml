@@ -4,8 +4,11 @@ params:
     name: 'floodsegment.net.network.AENet'
     params:
       net_name: 'sample_autoencoder'
-      input_ch: 3
-      output_ch: 1
+      input_names:
+        - image
+        - mask
+      output_names:
+        - flood_mask
       encoder:
         name: 'floodsegment.net.cnn.GenericEncoder'
         params:

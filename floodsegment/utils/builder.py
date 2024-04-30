@@ -1,5 +1,5 @@
 from torch import nn
-from torch.utils.data import Dataset
+from typing import TYPE_CHECKING
 from torchsummary import summary
 
 from importlib import import_module
@@ -10,6 +10,9 @@ from pydantic import ConfigDict
 from typing import Any, Dict
 
 from floodsegment.utils.yaml import load_yaml
+
+if TYPE_CHECKING:
+    from floodsegment.dataloader.base import BaseDataset
 
 import logging
 
@@ -75,11 +78,11 @@ def construct_model(model_config_path: str) -> nn.Module:
 
     assert ".net.model." in model_config.name, f"All models must be placed in model, got {model_config.name}"
     model = build_object(**model_config.model_dump(mode="str"))
-    logger.debug(f"{model.net.net_name}\n{summary(model)}")
+    # logger.debug(f"{model.net.net_name}\n{summary(model)}")
     return model
 
 
-def construct_dataset(dataset_config_path: str) -> Dataset:
+def construct_dataset(dataset_config_path: str) -> "BaseDataset":
     relative_path_keys = ["params.split_file"]
     dataset_config = BuildableType(**load_yaml(dataset_config_path, relative_path_keys=relative_path_keys))
     assert (

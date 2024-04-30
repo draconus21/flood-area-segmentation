@@ -6,13 +6,35 @@ from logging import getLogger
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from floodsegment import DATA_DIR, Mode
-from floodsegment.utils.builder import load_train_config, construct_dataset
+from floodsegment.dataloader.segment import FloodSample
+from floodsegment.utils.builder import load_train_config, construct_dataset, construct_model, TrainConfig
 from floodsegment.utils.logutils import setupLogging
 
 
 from typing import Dict, List
 
 logger = getLogger(__name__)
+
+GEN_PLT = "general"
+DATA_PLT = "data"
+TRAIN_PLOTTER_NAMES = [GEN_PLT, DATA_PLT]
+
+
+def prep_from_config(train_config: TrainConfig, plotters: Dict[str, SummaryWriter]):
+    # get dataset
+    dataset = construct_dataset(dataset_config_path=train_config.dataset)
+    logger.debug("created dataset")
+    sample: FloodSample = dataset[Mode.TRAIN, 0]
+    img_size = sample.image.shape
+    dataset.visualize(sample, plotters[DATA_PLT])
+    logger.debug("added sample data to tboard")
+
+    # get model
+    model = construct_model(model_config_path=train_config.model)
+    # TODO: Load from checkpoint (in constrcut_model)
+    plotters[GEN_PLT].add_graph(model=model, input_to_model=model.get_dummy_inputs())
+
+    plotters["general"]
 
 
 @click.command()
@@ -47,7 +69,7 @@ def train_cli(config, exp_dir, log_level, exp_name, port, n_epochs):
 
 
 def train(config, exp_dir, log_level, exp_name, port, n_epochs):
-    setupLogging(log_level)
+    setupLogging(log_level.upper())
 
     # helpful setting for debugging
     if log_level.upper() == "DEBUG":
@@ -57,18 +79,17 @@ def train(config, exp_dir, log_level, exp_name, port, n_epochs):
     logger.debug(f"loading training config: {config}")
     train_config = load_train_config(config)
 
+    # tensorboard
     tboard_dir = Path(exp_dir) / train_config.name / exp_name
-
     plotters = setup_tboard(tboard_dir, port)
 
-    # get dataset
-    dataset = construct_dataset(dataset_config_path=train_config.dataset)
-
-    dataset.visualize(dataset[Mode.TRAIN, 0], plotters["data"])
+    _ = prep_from_config(train_config, plotters)
 
 
-def setup_tboard(tboard_dir: str, port: int, plotter_names: List[str] = ["data"]) -> Dict[str, SummaryWriter]:
+def setup_tboard(tboard_dir: str, port: int, plotter_names: List[str] = []) -> Dict[str, SummaryWriter]:
     logger.info(f"tensorboard dir: {tboard_dir}")
+
+    plotter_names.extend(TRAIN_PLOTTER_NAMES)
 
     plotters = {k: SummaryWriter(str(Path(tboard_dir) / k)) for k in plotter_names}
     logger.info(f"plotters: {plotters.keys()}")

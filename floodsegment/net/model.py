@@ -22,6 +22,9 @@ class BaseModel(nn.Module):
     def train_step(self):
         raise NotImplementedError()
 
+    def forward(self, data: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+        return self.net(data)
+
 
 class SampleModel(BaseModel):
     def __init__(self, net: Dict[str, Any]):
