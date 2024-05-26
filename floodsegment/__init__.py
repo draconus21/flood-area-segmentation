@@ -24,3 +24,4 @@ class Mode(Enum):
 
 
 del Path
+del Enum
