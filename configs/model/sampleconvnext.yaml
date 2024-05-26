@@ -17,7 +17,7 @@ params:
         params:
           net_name: "encoder"
           init_kernel_size: 3
-          init_stride: 3
+          init_stride: 2
           init_activation: &activation
             name: torch.nn.ReLU
           init_normalization: &normalization

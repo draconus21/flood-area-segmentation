@@ -150,7 +150,9 @@ class ConvNeXt(BaseModule):
         self.kernel_size = kernel_size
         self.stride = stride
         self.dilation = dilation
+        # TODO: revisit this
         self.skip_connection = (stride == 1) and (in_channels == out_channels)
+        # logger.debug(f"skip_connection: {self.skip_connection}")
 
     def _build(
         self,
@@ -217,7 +219,8 @@ class ConvNeXt(BaseModule):
     def forward(self, x):
         out = self.block(x)
         if self.skip_connection:
-            out = out + x
+            assert out.shape == x.shape, f"Expecting both shapes to be same, but got {x.shape} and {out.shape}"
+            out = x + out
         return out
 
 

@@ -80,6 +80,7 @@ class GenericCnn(_Buildable):
             }
 
             _block.append(GenericBlock(**_kwargs))
+            logger.debug(f"{i}: added {base_config['name']}: {in_ch}->{out_ch}")
         return _block
 
 
@@ -154,7 +155,10 @@ class GenericDecoder(GenericCnn):
 
         _block = nn.ModuleList()
         for i, c_block in enumerate(conv_blocks):
-            up_module: nn.Sequential = build_object(**upsample_config, overrides={"size": size_config[i]})
+            up_module: nn.Sequential = build_object(
+                **upsample_config,
+                overrides={"in_channels": channel_config[i], "out_channels": channel_config[i], "size": size_config[i]},
+            )
             _block.append(up_module)
             _block.append(c_block)
             logger.debug(f"added {up_module}_{i} for size {size_config[0]}")
@@ -236,7 +240,6 @@ class GenericEncoder(GenericCnn):
         base_config: Dict[str, Any],
         **kwargs,
     ) -> nn.ModuleList:
-
         out_ch = None
         _block = nn.ModuleList()
 
@@ -252,7 +255,7 @@ class GenericEncoder(GenericCnn):
                 **kwargs,
             )
         )
-        logger.debug(f"added base layer with {input_size[0]} input channels")
+        logger.debug(f"added base layer {input_size[1:]}: {input_size[0]}->{channel_config[0]} ")
 
         _block.extend(
             super()._build(

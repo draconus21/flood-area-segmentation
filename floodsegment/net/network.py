@@ -4,6 +4,10 @@ from floodsegment.net.cnn import GenericDecoder
 
 from typing import Dict, Any, List, Tuple, OrderedDict
 
+from logging import getLogger
+
+logger = getLogger(__name__)
+
 
 class AENet(BaseEDNet):
     def __init__(
@@ -61,7 +65,11 @@ class AENet(BaseEDNet):
         # _dec_dilation_config = _encoder_params["dilation_config"][::-1]
         _dec_base_config = _encoder_params["base_config"]
         _dec_up_config = self.decoder_upsample_config
-
+        logger.info(f"dec: {_dec_channel_config}")
+        logger.info(f"dec: {_dec_layer_config}")
+        logger.info(f"dec: {_dec_stride_config}")
+        logger.info(f"dec: {_dec_size_config}")
+        logger.info(f"enc: {OrderedDict({k: v for k, v in self.encoder_out_sizes.items()})}")
         _decoder = GenericDecoder(
             output_ch=_dec_output_channel,
             out_kernel_size=_dec_output_kernel_size,
