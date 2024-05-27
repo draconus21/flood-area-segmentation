@@ -79,7 +79,7 @@ def train(config, exp_dir, log_level, exp_name, port, n_epochs):
     train_config = load_train_config(config)
 
     # tensorboard
-    tboard_dir = Path(exp_dir) / train_config.name / exp_name
+    tboard_dir = (Path(exp_dir) / train_config.name / exp_name).resolve()
     plotters = setup_tboard(tboard_dir, port)
 
     _ = prep_from_config(train_config, plotters)

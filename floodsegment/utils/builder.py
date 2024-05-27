@@ -92,5 +92,5 @@ def construct_dataset(dataset_config_path: str) -> "BaseDataset":
 
 
 def load_train_config(train_config_path: str) -> TrainConfig:
-    relative_path_keys = [k for k in TrainConfig.model_fields if k != "version"]
+    relative_path_keys = [k for k in TrainConfig.model_fields if k not in ["name", "version"]]
     return TrainConfig(**load_yaml(train_config_path, relative_path_keys=relative_path_keys))
