@@ -31,10 +31,9 @@ def prep_from_config(train_config: TrainConfig, plotters: Dict[str, SummaryWrite
 
     # get model
     model = construct_model(model_config_path=train_config.model)
-    # TODO: Load from checkpoint (in constrcut_model)
-    plotters[GEN_PLT].add_graph(model=model, input_to_model=model.net.get_dummy_inputs())
+    # TODO: Load from checkpoint (in construct_model)
 
-    plotters["general"]
+    plotters[GEN_PLT].add_graph(model=model, input_to_model=model.net.get_dummy_inputs())
 
 
 @click.command()
