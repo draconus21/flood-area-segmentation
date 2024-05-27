@@ -31,7 +31,7 @@ def remove_act_norm(config: Dict[str, Any]):
     return _copy_dict
 
 
-@pytest.mark.parametrize("input_ch", np.random.randint(1, 128, size=NUM_TEST_VALS))
+@pytest.mark.parametrize("input_size", np.random.randint(1, 128, size=[NUM_TEST_VALS, 3]))
 @pytest.mark.parametrize("init_kernel_size", 2 * np.random.randint(1, 128, size=NUM_TEST_VALS) + 1)
 @pytest.mark.parametrize("init_stride", np.random.randint(1, 128, size=NUM_TEST_VALS))
 @pytest.mark.parametrize("init_activation", [{"name": "torch.nn.ReLU"}])
@@ -41,7 +41,7 @@ def remove_act_norm(config: Dict[str, Any]):
 @pytest.mark.parametrize("stride_config", np.random.randint(1, 128, size=[3, NUM_TEST_VALS]))
 @pytest.mark.parametrize("base_config", [simple_conv()])
 def test_GenericEncoder(
-    input_ch,
+    input_size,
     init_kernel_size,
     init_stride,
     init_activation,
@@ -52,7 +52,7 @@ def test_GenericEncoder(
     base_config,
 ):
     cnn_kwargs = {
-        "input_ch": input_ch,
+        "input_size": input_size,
         "init_kernel_size": init_kernel_size,
         "init_stride": init_stride,
         "init_activation": init_activation,
@@ -78,40 +78,47 @@ def test_GenericEncoder(
     )
 
 
-@pytest.mark.parametrize("output_ch", np.random.randint(1, 128, size=NUM_TEST_VALS))
+@pytest.mark.parametrize(("input_ch", "output_ch"), np.random.randint(1, 128, size=[NUM_TEST_VALS, 2]))
 @pytest.mark.parametrize("out_kernel_size", 2 * np.random.randint(1, 128, size=NUM_TEST_VALS) + 1)
 @pytest.mark.parametrize("out_stride", np.random.randint(1, 128, size=NUM_TEST_VALS))
 @pytest.mark.parametrize("out_activation", [{"name": "torch.nn.ReLU"}])
 @pytest.mark.parametrize("out_normalization", [{"name": "torch.nn.BatchNorm2d"}])
+@pytest.mark.parametrize("size_config", np.random.randint(1, 128, size=[NUM_TEST_VALS, 2]))
 @pytest.mark.parametrize("layer_config", np.random.randint(1, 128, size=[3, NUM_TEST_VALS]))
 @pytest.mark.parametrize("channel_config", np.random.randint(1, 128, size=[3, NUM_TEST_VALS]))
 @pytest.mark.parametrize("stride_config", np.random.randint(1, 128, size=[3, NUM_TEST_VALS]))
+@pytest.mark.parametrize("upsample_config", [{"name": "floodsegment.net.module.UpsampleBilinear2d"}])
 @pytest.mark.parametrize("base_config", [simple_conv()])
 def test_GenericDecoder(
+    input_ch,
     output_ch,
     out_kernel_size,
     out_stride,
     out_activation,
     out_normalization,
+    size_config,
     layer_config,
     channel_config,
     stride_config,
+    upsample_config,
     base_config,
 ):
     cnn_kwargs = {
+        "input_ch": input_ch,
         "output_ch": output_ch,
         "out_kernel_size": out_kernel_size,
         "out_stride": out_stride,
         "out_activation": out_activation,
         "out_normalization": out_normalization,
+        "size_config": size_config,
         "layer_config": layer_config,
         "channel_config": channel_config,
         "stride_config": stride_config,
+        "upsample_config": upsample_config,
         "base_config": base_config,
         "net_name": "test",
     }
     g_cnn = GenericDecoder(**cnn_kwargs)
-
     check_module(
         g_cnn,
         **{

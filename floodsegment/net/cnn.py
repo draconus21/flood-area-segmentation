@@ -126,6 +126,7 @@ class GenericDecoder(GenericCnn):
             **kwargs,
         )
         self.net_name = net_name
+        self.size_config = size_config
         self.upsample_config = upsample_config
         self.output_ch = output_ch
         self.out_kernel_size = out_kernel_size
