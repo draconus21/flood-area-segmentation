@@ -26,7 +26,7 @@ class DictSampler(RandomSampler):
             mode in data_source.items
         ), f"{mode} must be a valid key in data_source._items: {data_source.items.keys()}"
 
-        if shuffle and mode != Mode.TRAIN:
+        if shuffle and mode != Mode.TRAIN.value:
             warnings.warn(
                 f"shuffling is available only in {Mode.TRAIN}. Setting shuffle=False for {mode} mode.",
                 category=RuntimeWarning,

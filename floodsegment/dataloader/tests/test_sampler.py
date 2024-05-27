@@ -6,6 +6,7 @@ from floodsegment.dataloader.segment import FloodDataset
 from floodsegment.dataloader.sampler import DictSampler
 
 
+@pytest.mark.filterwarnings("error")
 @pytest.mark.parametrize("split_file", [DATA_DIR / "flood-default-split.json"])
 @pytest.mark.parametrize("shuffle", [True, False])
 @pytest.mark.parametrize("ratio", list(set([1, *np.random.rand(3)])))
@@ -25,6 +26,7 @@ def test_DictSample(split_file: str | Path, shuffle: bool, ratio: float, mode: s
             fs = DictSampler(data_source=fd, mode=mode, shuffle=shuffle, ratio=ratio)
     else:
         fs = DictSampler(data_source=fd, mode=mode, shuffle=shuffle, ratio=ratio)
+        assert fs.shuffle == shuffle
 
     idx_list = []
     for key, idx in fs:
