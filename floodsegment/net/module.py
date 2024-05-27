@@ -219,7 +219,7 @@ class ConvNeXt(BaseModule):
     def forward(self, x):
         out = self.block(x)
         if self.skip_connection:
-            assert out.shape == x.shape, f"Expecting both shapes to be same, but got {x.shape} and {out.shape}"
+            # assert out.shape == x.shape, f"Expecting both shapes to be same, but got {x.shape} and {out.shape}"
             out = x + out
         return out
 

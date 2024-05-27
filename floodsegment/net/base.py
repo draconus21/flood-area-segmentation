@@ -3,7 +3,8 @@ import torch.nn as nn
 from torch import randn as trandn
 from floodsegment.utils.builder import build_object
 
-from typing import Any, Dict, OrderedDict, Tuple, List
+from collections import namedtuple
+from typing import Any, Dict, OrderedDict, Tuple, List, NamedTuple
 
 """
 Heirarchy
@@ -94,21 +95,38 @@ class BaseEDNet(nn.Module):
 
         self.decoder = self.build_decoder(self.decoder_config)
 
+        self.Output_Object = namedtuple("Output_Object", self.output_names)
+
         self.validate_io()
 
-    def forward(self, input_dict: Dict[str, Any]) -> OrderedDict[str, Any]:
+    def forward(self, input_dict: Dict[str, Any]) -> NamedTuple:
         assert all(
             [input_name in input_dict for input_name in self.input_names]
         ), f"Expecting inputs: {self.input_names}, but got {input_dict.keys()}"
 
         input_tensor = torch.cat([input_dict[in_name] for in_name in self.input_names], dim=1)
 
-        return self.decoder(self.encoder(input_tensor))
+        _outputs = self.decoder(self.encoder(input_tensor))
+        if isinstance(_outputs, torch.Tensor):
+            assert len(self.output_names) == 1, f"Expecting {len(self.output_names)} outputs, but only got 1"
+            _outputs = [_outputs]
+        elif isinstance(_outputs, list) and isinstance(_outputs[0], torch.Tensor):
+            assert (
+                len(self.output_names) == 1
+            ), f"Expecting {len(self.output_names)} outputs, but only got {len(_outputs)} outputs"
+        else:
+            raise ValueError(
+                f"Output must either be a torch Tensor or a list of torch Tensors, but got {type(_outputs)}"
+            )
+
+        return self.Output_Object(*_outputs)
 
     def validate_io(self):
         inputs, outputs = self.dummies()
-        assert self.input_names == inputs.keys(), f"Expecting inputs {self.input_names}, got {inputs.keys()}"
-        assert self.output_names == outputs.keys(), f"Expecting inputs {self.output_names}, got {outputs.keys()}"
+        assert self.input_names == list(inputs.keys()), f"Expecting inputs {self.input_names}, got {inputs.keys()}"
+        assert self.output_names == list(
+            outputs._asdict().keys()
+        ), f"Expecting inputs {self.output_names}, got {outputs._asdict().keys()}"
 
     def build_encoder(self, encoder_config: Dict[str, Any]) -> nn.Module:
         return build_object(**encoder_config, overrides={"input_size": [self.input_ch, *self.img_size]})
@@ -119,9 +137,9 @@ class BaseEDNet(nn.Module):
     def get_dummy_inputs(self) -> Dict[str, Any]:
         return {x: trandn(1, 1, *self.img_size) for x in self.input_names}
 
-    def get_dummy_outputs(self) -> OrderedDict[str, Any]:
+    def get_dummy_outputs(self) -> NamedTuple:
         self.eval()
         return self.forward(self.get_dummy_inputs())
 
-    def dummies(self) -> Tuple[Dict[str, Any], OrderedDict[str, Any]]:
+    def dummies(self) -> Tuple[Dict[str, Any], NamedTuple]:
         return self.get_dummy_inputs(), self.get_dummy_outputs()

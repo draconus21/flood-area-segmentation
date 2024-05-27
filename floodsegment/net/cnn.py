@@ -16,6 +16,7 @@ class GenericCnn(_Buildable):
     def __init__(
         self,
         *,
+        input_ch: int,  # number of input channels
         # Block params
         layer_config: List[int],
         channel_config: List[int],
@@ -29,6 +30,7 @@ class GenericCnn(_Buildable):
         # assert len(layer_config) == len(dilation_config), f"dilation config must be the same as layer config"
 
         super(__class__, self).__init__(
+            input_ch=input_ch,
             layer_config=layer_config,
             channel_config=channel_config,
             stride_config=stride_config,
@@ -36,6 +38,7 @@ class GenericCnn(_Buildable):
             **kwargs,
         )
 
+        self.input_ch = input_ch
         self.layer_config = layer_config
         self.channel_config = channel_config
         self.stride_config = stride_config
@@ -59,6 +62,7 @@ class GenericCnn(_Buildable):
     def _build(
         self,
         *,
+        input_ch: int,
         layer_config: List[int],
         channel_config: List[int],
         stride_config: List[int],
@@ -68,7 +72,7 @@ class GenericCnn(_Buildable):
         _block = nn.ModuleList()
 
         for i in range(len(layer_config)):
-            in_ch = out_ch or channel_config[0]
+            in_ch = input_ch if i == 0 else channel_config[i - 1]
             out_ch = channel_config[i]
             _kwargs = {
                 "in_channels": in_ch,
@@ -88,6 +92,7 @@ class GenericDecoder(GenericCnn):
     def __init__(
         self,
         *,
+        input_ch: int,
         # last layer params
         output_ch: int,
         out_kernel_size: int,
@@ -106,6 +111,7 @@ class GenericDecoder(GenericCnn):
         **kwargs,
     ):
         super(__class__, self).__init__(
+            input_ch=input_ch,
             output_ch=output_ch,
             out_kernel_size=out_kernel_size,
             out_stride=out_stride,
@@ -130,6 +136,7 @@ class GenericDecoder(GenericCnn):
     def _build(
         self,
         *,
+        input_ch: int,
         # last layer params
         output_ch: int,
         out_kernel_size: int,
@@ -147,6 +154,7 @@ class GenericDecoder(GenericCnn):
         **kwargs,
     ) -> nn.ModuleList:
         conv_blocks = super()._build(
+            input_ch=input_ch,
             layer_config=layer_config,
             channel_config=channel_config,
             stride_config=stride_config,
@@ -154,10 +162,15 @@ class GenericDecoder(GenericCnn):
         )
 
         _block = nn.ModuleList()
+        up_channel_config = [input_ch, *channel_config[:-1]]
         for i, c_block in enumerate(conv_blocks):
             up_module: nn.Sequential = build_object(
                 **upsample_config,
-                overrides={"in_channels": channel_config[i], "out_channels": channel_config[i], "size": size_config[i]},
+                overrides={
+                    "in_channels": up_channel_config[i],
+                    "out_channels": up_channel_config[i],
+                    "size": size_config[i],
+                },
             )
             _block.append(up_module)
             _block.append(c_block)
@@ -204,6 +217,7 @@ class GenericEncoder(GenericCnn):
         # assert len(layer_config) == len(dilation_config), f"dilation config must be the same as layer config"
 
         super(__class__, self).__init__(
+            input_ch=input_size[0],  # needed for GenericCnn
             input_size=input_size,
             init_kernel_size=init_kernel_size,
             init_stride=init_stride,
@@ -226,6 +240,7 @@ class GenericEncoder(GenericCnn):
     def _build(
         self,
         *,
+        input_ch: int,  # needed for GenericCnn
         # base layer params
         input_size: Tuple[int, int, int],  # [channel, height, width]
         init_kernel_size: int,
@@ -259,6 +274,7 @@ class GenericEncoder(GenericCnn):
 
         _block.extend(
             super()._build(
+                input_ch=channel_config[0],
                 layer_config=layer_config,
                 channel_config=channel_config,
                 stride_config=stride_config,

@@ -63,14 +63,17 @@ class AENet(BaseEDNet):
         _dec_channel_config = _encoder_params["channel_config"][::-1]
         _dec_stride_config = _encoder_params["stride_config"][::-1]
         # _dec_dilation_config = _encoder_params["dilation_config"][::-1]
+
+        _dec_input_ch = _dec_channel_config[0]
+        _dec_layer_config = _dec_layer_config[1:]
+        _dec_channel_config = _dec_channel_config[1:]
+        _dec_stride_config = [1] * len(_dec_channel_config)  # _dec_stride_config[1:]
+        # _dec_dilation_config= _dec_dilation_config[1:]
+
         _dec_base_config = _encoder_params["base_config"]
         _dec_up_config = self.decoder_upsample_config
-        logger.info(f"dec: {_dec_channel_config}")
-        logger.info(f"dec: {_dec_layer_config}")
-        logger.info(f"dec: {_dec_stride_config}")
-        logger.info(f"dec: {_dec_size_config}")
-        logger.info(f"enc: {OrderedDict({k: v for k, v in self.encoder_out_sizes.items()})}")
         _decoder = GenericDecoder(
+            input_ch=_dec_input_ch,
             output_ch=_dec_output_channel,
             out_kernel_size=_dec_output_kernel_size,
             out_stride=_dec_output_stride,
