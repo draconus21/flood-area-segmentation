@@ -1,14 +1,14 @@
 from torch import nn
-from typing import TYPE_CHECKING
-from torchsummary import summary
+from typing import TYPE_CHECKING, List, Any, Optional, Dict
 
 from importlib import import_module
 
 from pathlib import Path
-from pydantic import BaseModel as _BaseModel, field_validator
-from pydantic import ConfigDict
+from pydantic import BaseModel as _BaseModel
+from pydantic import ConfigDict, field_validator
 from typing import Any, Dict
 
+from floodsegment import CONFIG_VERSION
 from floodsegment.utils.yaml import load_yaml
 
 if TYPE_CHECKING:
@@ -32,21 +32,39 @@ class TrainConfig(BaseModel):
     version: int
     name: str
     dataset: str
-    sampler: str
+    samplers: str
     model: str
     scheduler: str
     optimizer: str
     criterion: str
 
-    @field_validator("dataset", "model", "scheduler", "optimizer", "criterion")
+    @field_validator("dataset", "samplers", "model", "scheduler", "optimizer", "criterion")
     def v_valid_file(cls, val):
-        v = Path(val).absolute()
+        v = Path(val).resolve()
         assert v.exists() and v.is_file(), f"Must be a valid file that exists, got {v}"
         return str(v)
 
     @field_validator("version")
     def v_version(cls, val):
-        assert val == 1, f"version must be 1, got {val}"
+        assert val == CONFIG_VERSION, f"version must be {CONFIG_VERSION}, got {val}"
+        return val
+
+
+class TrainSetup(BaseModel):
+    model_config = ConfigDict(validate_assignment=True, extra="forbid", arbitrary_types_allowed=True)
+
+    version: int
+    name: str
+    dataset: Any
+    samplers: Dict
+    model: nn.Module
+    scheduler: Any
+    optimizer: Any
+    criterion: Any
+
+    @field_validator("version")
+    def v_version(cls, val):
+        assert val == CONFIG_VERSION, f"version must be {CONFIG_VERSION}, got {val}"
         return val
 
 
@@ -74,21 +92,52 @@ def get_class(name: str) -> Any:
 
 
 def construct_model(model_config_path: str) -> nn.Module:
-    model_config = BuildableType(**load_yaml(model_config_path))
-
-    assert ".net.model." in model_config.name, f"All models must be placed in model, got {model_config.name}"
-    model = build_object(**model_config.model_dump(mode="str"))
-    # logger.debug(f"{model.net.net_name}\n{summary(model)}")
-    return model
+    return construct_x(x_config_path=model_config_path, scope=".net.model.")
 
 
 def construct_dataset(dataset_config_path: str) -> "BaseDataset":
-    relative_path_keys = ["params.split_file"]
-    dataset_config = BuildableType(**load_yaml(dataset_config_path, relative_path_keys=relative_path_keys))
-    assert (
-        ".dataloader." in dataset_config.name
-    ), f"All datasets must be placed in dataloader, got {dataset_config.name}"
-    return build_object(**dataset_config.model_dump(mode="str"))
+    return construct_x(
+        x_config_path=dataset_config_path, relative_path_keys=["params.split_file"], scope=".dataloader."
+    )
+
+
+def construct_sampler(sample_config_path: str, dataset: "BaseDataset") -> Dict:
+    scope = ".dataloader."
+    sample_config = load_yaml(sample_config_path)
+
+    samplers = {}
+    for k in sample_config:
+        s_config = BuildableType(**sample_config[k])
+        assert scope in s_config.name, f"Must be placed in {scope}, got {s_config.name}"
+        samplers[k] = build_object(**s_config.model_dump(mode="str"), overrides={"data_source": dataset})
+    return samplers
+
+
+def constrcut_optimizer(optimizer_config_path: str, model: nn.Module):
+    scope = ".optim."
+    params = [p for p in model.parameters() if p.requires_grad]
+    assert len(params) > 1, f"Model must have at least 1 param to optimize, got {len(params)}"
+    logger.info(f"Found {len(params)} params to optimize")
+
+    return construct_x(x_config_path=optimizer_config_path, scope=".optim.", overrides={"params": params})
+
+
+def construct_criterion(criterion_config_path: str):
+    return construct_x(x_config_path=criterion_config_path)
+
+
+def constrcut_scheduler(scheduler_config_path: str, optimizer):
+    return construct_x(x_config_path=scheduler_config_path, scope=".optim.", overrides={"optimizer": optimizer})
+
+
+def construct_x(
+    x_config_path: str, relative_path_keys: List[str] = [], scope: Optional[str] = None, overrides: Dict = {}
+) -> Any:
+    x_config = BuildableType(**load_yaml(x_config_path, relative_path_keys=relative_path_keys))
+    if scope:
+        assert scope in x_config.name, f"Must be placed in {scope}, got {x_config.name}"
+
+    return build_object(**x_config.model_dump(mode="str"), overrides=overrides)
 
 
 def load_train_config(train_config_path: str) -> TrainConfig:

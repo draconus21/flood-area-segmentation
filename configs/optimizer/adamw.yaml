@@ -1,4 +1,4 @@
-name: AdamW
+name: torch.optim.AdamW
 params:
   betas:
   - 0.9

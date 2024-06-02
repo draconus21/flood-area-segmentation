@@ -1,7 +1,7 @@
 version: 1
 name: base-flood
 dataset: ../dataset/flood.yaml
-sampler: ../sampler/flood.yaml
+samplers: ../sampler/flood.yaml
 model: ../model/sampleconvnext.yaml
 scheduler: ../scheduler/reduceLR.yaml
 optimizer: ../optimizer/adamw.yaml

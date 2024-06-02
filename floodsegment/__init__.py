@@ -14,6 +14,12 @@ EXP_DIR = PKG_DIR / "experiments"
 LOG_DIR = PKG_DIR / "logs"
 LOG_CFG = PKG_DIR / "default-logging.json"
 
+CONFIG_VERSION = 1
+
+import torch
+
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
 from enum import Enum
 
 
@@ -24,4 +30,5 @@ class Mode(Enum):
 
 
 del Path
+del torch
 del Enum

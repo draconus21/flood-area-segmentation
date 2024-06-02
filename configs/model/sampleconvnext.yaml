@@ -1,4 +1,4 @@
-name: 'floodsegment.net.model.SampleModel'
+name: 'floodsegment.net.model.FloodModel'
 params:
   net:
     name: 'floodsegment.net.network.AENet'

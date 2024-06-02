@@ -105,8 +105,8 @@ class BaseEDNet(nn.Module):
         ), f"Expecting inputs: {self.input_names}, but got {input_dict.keys()}"
 
         input_tensor = torch.cat([input_dict[in_name] for in_name in self.input_names], dim=1)
-
         _outputs = self.decoder(self.encoder(input_tensor))
+
         if isinstance(_outputs, torch.Tensor):
             assert len(self.output_names) == 1, f"Expecting {len(self.output_names)} outputs, but only got 1"
             _outputs = [_outputs]

@@ -1,4 +1,4 @@
-name: ReduceLROnPlateau
+name: torch.optim.lr_scheduler.ReduceLROnPlateau
 params:
   min_lr: 1.0e-06
   factor: 0.5

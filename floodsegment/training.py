@@ -1,13 +1,25 @@
+import time
 import click
 import torch
 from pathlib import Path
 from logging import getLogger
+from tempfile import TemporaryDirectory
 
 from torch.utils.tensorboard.writer import SummaryWriter
 
-from floodsegment import DATA_DIR, Mode
+from floodsegment import DATA_DIR, Mode, DEVICE
 from floodsegment.dataloader.segment import FloodSample
-from floodsegment.utils.builder import load_train_config, construct_dataset, construct_model, TrainConfig
+from floodsegment.utils.builder import (
+    TrainConfig,
+    TrainSetup,
+    load_train_config,
+    construct_dataset,
+    construct_model,
+    construct_sampler,
+    constrcut_optimizer,
+    constrcut_scheduler,
+    construct_criterion,
+)
 from floodsegment.utils.logutils import setupLogging
 
 
@@ -21,21 +33,51 @@ TRAIN_PLOTTER_NAMES = [GEN_PLT, DATA_PLT]
 TRAIN_PLOTTER_NAMES = TRAIN_PLOTTER_NAMES + [m.value for m in Mode]
 TRAIN_PLOTTER_NAMES = TRAIN_PLOTTER_NAMES + [f"{m.value}_fixed" for m in Mode]
 
+BEST_PARAMS_PATH = "best_model_params.pt"
 
-def prep_from_config(train_config: TrainConfig, plotters: Dict[str, SummaryWriter]):
+
+def prep_from_config(train_config: TrainConfig, plotters: Dict[str, SummaryWriter]) -> TrainSetup:
     # get dataset
-    dataset = construct_dataset(dataset_config_path=train_config.dataset)
-    logger.debug("created dataset")
+    dataset = construct_dataset(train_config.dataset)
+    logger.debug(f"Created dataset from {train_config.dataset}")
     sample: FloodSample = dataset[Mode.TRAIN, 0]
     img_size = sample.image.shape
     dataset.visualize(sample, plotters[DATA_PLT])
-    logger.debug("added sample data to tboard")
+    logger.debug("Added sample data to tboard")
+
+    # get samplers
+    samplers = construct_sampler(train_config.samplers, dataset=dataset)
+    logger.info(f"Loaded samplers: {[k for k in samplers]} from {train_config.samplers}")
 
     # get model
-    model = construct_model(model_config_path=train_config.model)
+    model = construct_model(train_config.model)
     # TODO: Load from checkpoint (in construct_model)
 
     plotters[GEN_PLT].add_graph(model=model, input_to_model=model.net.get_dummy_inputs())
+    logger.info(f"Loaded model from {train_config.model}")
+
+    # get optimizer
+    optimizer = constrcut_optimizer(train_config.optimizer, model=model)
+    logger.info(f"Loaded optimzier from {train_config.optimizer}")
+
+    # get scheduler
+    scheduler = constrcut_scheduler(train_config.scheduler, optimizer=optimizer)
+    logger.info(f"Loaded scheduler from {train_config.scheduler}")
+
+    # get criterion
+    criterion = construct_criterion(train_config.criterion)
+    logger.info(f"Loaded criterion from {train_config.criterion}")
+
+    return TrainSetup(
+        version=train_config.version,
+        name=train_config.name,
+        dataset=dataset,
+        samplers=samplers,
+        model=model,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        criterion=criterion,
+    )
 
 
 @click.command()
@@ -53,6 +95,16 @@ def prep_from_config(train_config: TrainConfig, plotters: Dict[str, SummaryWrite
     type=click.Path(file_okay=False, dir_okay=True),
     default=Path(DATA_DIR) / "experiments",
     help="path to experiment dir",
+    show_default=True,
+)
+@click.option(
+    "-d",
+    "--device",
+    required=True,
+    type=click.Choice(["cpu", "cuda"], case_sensitive=False),
+    default=DEVICE,
+    help="device",
+    show_default=True,
 )
 @click.option(
     "-l",
@@ -61,20 +113,23 @@ def prep_from_config(train_config: TrainConfig, plotters: Dict[str, SummaryWrite
     type=click.Choice(["DEBUG", "INFO", "WARNING", "CRITICAL"], case_sensitive=False),
     default="INFO",
     help="log level",
+    show_default=True,
 )
 @click.option("-n", "--exp-name", required=True, default="flood-exp", help="Experiment name")
 @click.option("-ne", "--n-epochs", required=True, default=100, help="Number of epochs")
-def train_cli(config, exp_dir, log_level, exp_name, n_epochs):
-    train(config, exp_dir, log_level, exp_name, n_epochs)
+def train_cli(config, exp_dir, log_level, exp_name, n_epochs, device):
+    train(config, exp_dir, log_level, exp_name, n_epochs, device)
 
 
-def train(config, exp_dir, log_level, exp_name, n_epochs):
+def train(config, exp_dir, log_level, exp_name, n_epochs, device):
     setupLogging(log_level.upper())
 
     # helpful setting for debugging
     if log_level.upper() == "DEBUG":
         logger.debug("enabling torch.autograd.set_detect_anomaly")
         torch.autograd.set_detect_anomaly(True)
+
+    assert device == "cpu" or torch.cuda.is_available(), f"No cuda device found, please use device=cpu"
 
     logger.debug(f"loading training config: {config}")
     train_config = load_train_config(config)
@@ -83,7 +138,63 @@ def train(config, exp_dir, log_level, exp_name, n_epochs):
     tboard_dir = (Path(exp_dir) / train_config.name / exp_name).resolve()
     plotters = setup_tboard(tboard_dir)
 
-    _ = prep_from_config(train_config, plotters)
+    train_setup = prep_from_config(train_config, plotters)
+    train_setup.model.to(device)
+
+    ## training
+
+    if device == "cuda":
+        logger.info(f"Using {torch.cuda.get_device_name(0)}")
+        logger.info(f"Cached {round(torch.cuda.memory_reserved(0)/1024**3, 1)} GB")
+        logger.info(f"Allocated {round(torch.cuda.memory_allocated(0)/1024**3, 1)} GB")
+
+    loss = _train(train_setup, plotters, exp_dir, n_epochs, device)
+
+
+def _train(
+    train_setup: TrainSetup, plotters: Dict[str, SummaryWriter], exp_dir: str, n_epochs: int, device: str
+) -> float:
+    since = time.time()
+    with TemporaryDirectory(prefix=train_setup.name, dir=exp_dir) as tempdir:
+        best_model_params_path = (Path(tempdir) / BEST_PARAMS_PATH).resolve()
+        best_loss = float("inf")
+
+        model = train_setup.model
+        samplers = train_setup.samplers
+
+        def _save_best():
+            logger.debug(f"best params [loss: {best_loss}] saved to: {best_model_params_path}")
+            torch.save(model.state_dict(), best_model_params_path)
+
+        _save_best()
+
+        for epoch in range(n_epochs):
+            logger.info(f"Epoch {epoch}/{n_epochs-1}")
+
+            for it, phase in enumerate(samplers):
+                global_step = epoch * it
+                _sampler = samplers[phase]
+                kwargs = {
+                    "optimizer": train_setup.optimizer,
+                    "criterion": train_setup.criterion,
+                    "plotters": plotters,
+                    "device": device,
+                    "global_step": global_step,
+                }
+                if Mode(phase.upper()) == Mode.TRAIN:
+                    step_func = model.train_step
+                    kwargs["optimizer"] = (train_setup.optimizer,)
+                elif Mode(phase.upper()) == Mode.VALID:
+                    step_func = model.valid_step
+                else:
+                    raise NotImplementedError(f"No step function implemeted for phase: {phase}")
+
+                running_loss = 0.0
+
+                for sample in _sampler:
+                    loss, outputs = step_func(sample, **kwargs)
+    time_elapsed = time.time() - since
+    logger.info(f"Training complete in {time_elapsed//60:.0f}m {time_elapsed%60:.0f}s")
 
 
 def setup_tboard(tboard_dir: str, plotter_names: List[str] = []) -> Dict[str, SummaryWriter]:
@@ -93,6 +204,8 @@ def setup_tboard(tboard_dir: str, plotter_names: List[str] = []) -> Dict[str, Su
 
     plotters = {k: SummaryWriter(str(Path(tboard_dir) / k)) for k in plotter_names}
     logger.info(f"plotters: {plotters.keys()}")
+
+    # TODO: add profiler
     return plotters
 
 

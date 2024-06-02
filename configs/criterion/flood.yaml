@@ -1,1 +1,2 @@
-# TODO: Add losses
+name: torch.nn.CrossEntropyLoss
+params: {}
