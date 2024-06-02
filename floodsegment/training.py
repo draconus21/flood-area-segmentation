@@ -18,6 +18,8 @@ logger = getLogger(__name__)
 GEN_PLT = "general"
 DATA_PLT = "data"
 TRAIN_PLOTTER_NAMES = [GEN_PLT, DATA_PLT]
+TRAIN_PLOTTER_NAMES = TRAIN_PLOTTER_NAMES + [m.value for m in Mode]
+TRAIN_PLOTTER_NAMES = TRAIN_PLOTTER_NAMES + [f"{m.value}_fixed" for m in Mode]
 
 
 def prep_from_config(train_config: TrainConfig, plotters: Dict[str, SummaryWriter]):
