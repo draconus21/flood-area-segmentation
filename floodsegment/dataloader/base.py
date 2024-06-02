@@ -40,12 +40,14 @@ class BaseDataset(Dataset):
         """
         pass
 
-    def process_split_item(self, item: BaseModel) -> BaseModel:
-        return item
+    def process_split_item(self, item: BaseModel) -> Dict:
+        return item.model_dump(mode="python")
 
-    def __getitem__(self, idx_tuple: Tuple[Mode, int]):
+    def __getitem__(self, idx_tuple: Tuple[str, int]):
         key, idx = idx_tuple
-        return self.process_split_item(self.items[key.value][idx])
+        assert Mode(key), f"{key} must be a valide Mode"
+        key = Mode(key).value
+        return self.process_split_item(self.items[key][idx])
 
     def __len__(self):
         return self.n_samples

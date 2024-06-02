@@ -37,6 +37,8 @@ class TrainConfig(BaseModel):
     scheduler: str
     optimizer: str
     criterion: str
+    batch_size: int
+    num_workers: int
 
     @field_validator("dataset", "samplers", "model", "scheduler", "optimizer", "criterion")
     def v_valid_file(cls, val):
@@ -57,6 +59,7 @@ class TrainSetup(BaseModel):
     name: str
     dataset: Any
     samplers: Dict
+    dataloaders: Dict
     model: nn.Module
     scheduler: Any
     optimizer: Any
@@ -141,5 +144,7 @@ def construct_x(
 
 
 def load_train_config(train_config_path: str) -> TrainConfig:
-    relative_path_keys = [k for k in TrainConfig.model_fields if k not in ["name", "version"]]
+    relative_path_keys = [
+        k for k in TrainConfig.model_fields if k not in ["name", "version", "batch_size", "num_workers"]
+    ]
     return TrainConfig(**load_yaml(train_config_path, relative_path_keys=relative_path_keys))

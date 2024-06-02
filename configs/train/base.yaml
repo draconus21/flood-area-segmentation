@@ -1,4 +1,6 @@
 version: 1
+batch_size: 8
+num_workers: 4
 name: base-flood
 dataset: ../dataset/flood.yaml
 samplers: ../sampler/flood.yaml

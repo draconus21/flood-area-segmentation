@@ -5,6 +5,7 @@ from pathlib import Path
 from logging import getLogger
 from tempfile import TemporaryDirectory
 
+from torch.utils.data import DataLoader
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from floodsegment import DATA_DIR, Mode, DEVICE
@@ -40,8 +41,8 @@ def prep_from_config(train_config: TrainConfig, plotters: Dict[str, SummaryWrite
     # get dataset
     dataset = construct_dataset(train_config.dataset)
     logger.debug(f"Created dataset from {train_config.dataset}")
-    sample: FloodSample = dataset[Mode.TRAIN, 0]
-    img_size = sample.image.shape
+    sample: Dict = dataset[Mode.TRAIN, 0]
+    img_size = sample["image"].shape
     dataset.visualize(sample, plotters[DATA_PLT])
     logger.debug("Added sample data to tboard")
 
@@ -49,6 +50,18 @@ def prep_from_config(train_config: TrainConfig, plotters: Dict[str, SummaryWrite
     samplers = construct_sampler(train_config.samplers, dataset=dataset)
     logger.info(f"Loaded samplers: {[k for k in samplers]} from {train_config.samplers}")
 
+    # get dataloaders
+    dataloaders = {
+        x: DataLoader(
+            dataset,
+            sampler=samplers[x],
+            batch_size=train_config.batch_size,
+            num_workers=train_config.num_workers,
+            pin_memory=False,
+            drop_last=True,
+        )
+        for x in samplers
+    }
     # get model
     model = construct_model(train_config.model)
     # TODO: Load from checkpoint (in construct_model)
@@ -72,6 +85,7 @@ def prep_from_config(train_config: TrainConfig, plotters: Dict[str, SummaryWrite
         version=train_config.version,
         name=train_config.name,
         dataset=dataset,
+        dataloaders=dataloaders,
         samplers=samplers,
         model=model,
         optimizer=optimizer,
@@ -160,6 +174,7 @@ def _train(
         best_loss = float("inf")
 
         model = train_setup.model
+        dataloaders = train_setup.dataloaders
         samplers = train_setup.samplers
 
         def _save_best():
@@ -171,28 +186,37 @@ def _train(
         for epoch in range(n_epochs):
             logger.info(f"Epoch {epoch}/{n_epochs-1}")
 
-            for it, phase in enumerate(samplers):
-                global_step = epoch * it
-                _sampler = samplers[phase]
+            for phase in dataloaders:
+                _dataloader = dataloaders[phase]
+                _phase = Mode(phase.upper())
                 kwargs = {
                     "optimizer": train_setup.optimizer,
                     "criterion": train_setup.criterion,
                     "plotters": plotters,
                     "device": device,
-                    "global_step": global_step,
+                    "sample_viz": train_setup.dataset.visualize,
                 }
-                if Mode(phase.upper()) == Mode.TRAIN:
+                if _phase == Mode.TRAIN:
                     step_func = model.train_step
                     kwargs["optimizer"] = (train_setup.optimizer,)
-                elif Mode(phase.upper()) == Mode.VALID:
+                elif _phase == Mode.VALID:
                     step_func = model.valid_step
                 else:
                     raise NotImplementedError(f"No step function implemeted for phase: {phase}")
 
                 running_loss = 0.0
 
-                for sample in _sampler:
+                for step, sample in enumerate(_dataloader):
+                    kwargs["global_step"] = epoch * step
                     loss, outputs = step_func(sample, **kwargs)
+                    running_loss += loss.item() * sample.size(0)
+
+                if _phase == Mode.TRAIN:
+                    train_setup.scheduler.step()
+
+                epoch_loss = running_loss / len(_dataloader)
+                logger.info(f"{_phase} loss: {epoch_loss}")
+
     time_elapsed = time.time() - since
     logger.info(f"Training complete in {time_elapsed//60:.0f}m {time_elapsed%60:.0f}s")
 

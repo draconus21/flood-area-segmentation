@@ -180,7 +180,8 @@ class FloodSample(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def m_before(cls, data: Dict):
-        assert "flood_item" in data
+        if "flood_item" not in data:
+            return data
 
         fitem = data.pop("flood_item")
         assert isinstance(fitem, FloodItem)
@@ -204,13 +205,13 @@ class FloodDataset(BaseDataset):
             split_ratio=split_ratio,
         )
 
-    def process_split_item(self, item: FloodItem) -> FloodSample:
+    def process_split_item(self, item: FloodItem) -> Dict:
         sample = FloodSample(flood_item=item)
-        return sample
+        return sample.model_dump(mode="python")
 
     def visualize(
         self,
-        sample: FloodItem,
+        sample: FloodSample,
         plotter: SummaryWriter,
         *,
         global_step: Optional[int] = None,
@@ -219,11 +220,17 @@ class FloodDataset(BaseDataset):
         **kwargs,
     ):
         """
-        Visualize a flood sample at given index in FloodDataset
+        Visualize a flood sample
         """
+        assert isinstance(sample, dict) or isinstance(
+            sample, FloodSample
+        ), f"sample must be either a dict or a FloodSample, got {type(sample)}"
+
+        _sample = sample if isinstance(sample, FloodSample) else FloodSample(**sample)
+
         plotter.add_figure(
             tag="FloodItem",
-            figure=quickmatshow_dict(sample.model_dump(mode="python"), title="Flood Sample", **kwargs),
+            figure=quickmatshow_dict(_sample.model_dump(mode="python"), title="Flood Sample", **kwargs),
             global_step=global_step,
             close=close,
             walltime=walltime,
