@@ -61,13 +61,12 @@ def prep_from_config(train_config: TrainConfig, plotters: Dict[str, SummaryWrite
     help="log level",
 )
 @click.option("-n", "--exp-name", required=True, default="flood-exp", help="Experiment name")
-@click.option("-p", "--port", required=True, default=8090, help="tensorboard port")
 @click.option("-ne", "--n-epochs", required=True, default=100, help="Number of epochs")
-def train_cli(config, exp_dir, log_level, exp_name, port, n_epochs):
-    train(config, exp_dir, log_level, exp_name, port, n_epochs)
+def train_cli(config, exp_dir, log_level, exp_name, n_epochs):
+    train(config, exp_dir, log_level, exp_name, n_epochs)
 
 
-def train(config, exp_dir, log_level, exp_name, port, n_epochs):
+def train(config, exp_dir, log_level, exp_name, n_epochs):
     setupLogging(log_level.upper())
 
     # helpful setting for debugging
@@ -80,12 +79,12 @@ def train(config, exp_dir, log_level, exp_name, port, n_epochs):
 
     # tensorboard
     tboard_dir = (Path(exp_dir) / train_config.name / exp_name).resolve()
-    plotters = setup_tboard(tboard_dir, port)
+    plotters = setup_tboard(tboard_dir)
 
     _ = prep_from_config(train_config, plotters)
 
 
-def setup_tboard(tboard_dir: str, port: int, plotter_names: List[str] = []) -> Dict[str, SummaryWriter]:
+def setup_tboard(tboard_dir: str, plotter_names: List[str] = []) -> Dict[str, SummaryWriter]:
     logger.info(f"tensorboard dir: {tboard_dir}")
 
     plotter_names.extend(TRAIN_PLOTTER_NAMES)
