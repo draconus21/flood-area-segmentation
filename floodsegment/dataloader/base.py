@@ -5,9 +5,10 @@ from torch.utils.data import Dataset
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from floodsegment import Mode
+from floodsegment.dataloader.transforms import init_transforms
 from floodsegment.utils.builder import BaseModel
 
-from typing import Dict, List, Tuple, Type
+from typing import OrderedDict, Dict, List, Tuple, Type
 
 
 import logging
@@ -21,7 +22,7 @@ class BaseDataset(Dataset):
         split_item_class: Type[BaseModel],
         split_file: str | Path,
         split_ratio: float | Dict[str, float],
-        transform_dict: Dict = {},
+        transform_dict: OrderedDict = OrderedDict(),
     ):
         self.split_item_class = split_item_class
 
@@ -30,7 +31,7 @@ class BaseDataset(Dataset):
         self.n_samples: int = 0
 
         self.split_ratio: Dict[Mode, float] = {}
-        self.transform_dict = transform_dict
+        self.transform_dict = init_transforms(transform_dict)
 
         self._update_from_split_file(split_file=split_file, split_ratio=split_ratio)
 
@@ -41,7 +42,10 @@ class BaseDataset(Dataset):
         pass
 
     def process_split_item(self, item: BaseModel) -> Dict:
-        return item.model_dump(mode="python")
+        _item = item.model_dump(mode="python")
+        for k, t in self.transform_dict.items():
+            _item = t(_item)
+            logger.debug(f"applied {k}", extra={'limit": 1'})
 
     def __getitem__(self, idx_tuple: Tuple[str, int]):
         key, idx = idx_tuple
