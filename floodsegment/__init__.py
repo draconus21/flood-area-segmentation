@@ -24,9 +24,9 @@ from enum import Enum
 
 
 class Mode(Enum):
-    TRAIN = "TRAIN"
-    VALID = "VALID"
-    TEST = "TEST"
+    TRAIN = "train"
+    VALID = "valid"
+    TEST = "test"
 
 
 del Path

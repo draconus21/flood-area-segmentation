@@ -10,7 +10,7 @@ from floodsegment.dataloader.sampler import DictSampler
 @pytest.mark.parametrize("split_file", [DATA_DIR / "flood-default-split.json"])
 @pytest.mark.parametrize("shuffle", [True, False])
 @pytest.mark.parametrize("ratio", list(set([1, *np.random.rand(3)])))
-@pytest.mark.parametrize("mode", ["TRAIN", "TEST", "VALID", "invalid"])
+@pytest.mark.parametrize("mode", ["train", "test", "valid", "invalid"])
 def test_DictSample(split_file: str | Path, shuffle: bool, ratio: float, mode: str):
     fd = FloodDataset(split_file=split_file, split_ratio=0.5)
 
