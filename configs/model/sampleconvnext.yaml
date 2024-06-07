@@ -4,10 +4,9 @@ params:
     name: 'floodsegment.net.network.AENet'
     params:
       net_name: 'sample_autoencoder_neXt'
-      img_size: [256, 748]
+      img_size: [64, 64]
       input_names:
         - image
-        - mask
       output_names:
         - flood_mask
       decoder_upsample_config:

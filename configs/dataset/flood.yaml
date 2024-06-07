@@ -3,5 +3,6 @@ params:
   split_file: ../../data/flood-default-split.json
   split_ratio: 1.0
   transform_dict:
+    torchvision.transforms.ToTensor: {}
     torchvision.transforms.v2.RandomCrop:
       size: [64, 64]

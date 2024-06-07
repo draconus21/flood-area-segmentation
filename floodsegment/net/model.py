@@ -85,9 +85,9 @@ class FloodModel(BaseModel):
     def __init__(self, net: Dict[str, Any]):
         super(__class__, self).__init__(net=net)
 
-    def compute_loss(self, sample: BaseModel, *, criterion, device) -> Tuple:
-        _sample = self.to(sample.model_dump(mode="python"))
-        outputs = self.forward(_sample["image"], device)
+    def compute_loss(self, sample: Dict, *, criterion, device) -> Tuple:
+        _sample = self.to_device(sample, device)
+        outputs = self.forward(_sample)
         loss = criterion(outputs, sample["mask"])
 
         return loss, outputs

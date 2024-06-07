@@ -126,9 +126,6 @@ def get_vmin_vmax(
 
 
 def matshow(mat: np.ndarray | np.ma.MaskedArray, ax=None, title: str = "", cbar: bool = True, **kwargs):
-    if mat is None:
-        logger.debug(f"no mat provided")
-        return
     if ax is None:
         suptitle = kwargs.pop("suptitle", f"fig for {title}")
         _, ax = subplots(1, 1, title=suptitle)

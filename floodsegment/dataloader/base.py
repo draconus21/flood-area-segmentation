@@ -42,16 +42,20 @@ class BaseDataset(Dataset):
         pass
 
     def process_split_item(self, item: BaseModel) -> Dict:
-        _item = item.model_dump(mode="python")
-        for k, t in self.transform_dict.items():
-            _item = t(_item)
-            logger.debug(f"applied {k}", extra={'limit": 1'})
+        return item.model_dump(mode="python")
 
     def __getitem__(self, idx_tuple: Tuple[str, int]):
         key, idx = idx_tuple
         assert Mode(key), f"{key} must be a valide Mode"
         key = Mode(key).value
-        return self.process_split_item(self.items[key][idx])
+
+        _item = self.process_split_item(self.items[key][idx])
+
+        # apply transforms
+        for k, t in self.transform_dict.items():
+            _item = t(_item)
+            logger.debug(f"applied {k}", extra={'limit": 1'})
+        return _item
 
     def __len__(self):
         return self.n_samples

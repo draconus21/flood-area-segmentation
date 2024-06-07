@@ -2,6 +2,7 @@ import click
 import csv
 import json
 import random
+from torch import Tensor
 import numpy as np
 import imageio.v3 as iio
 from pathlib import Path
@@ -15,6 +16,7 @@ from floodsegment import DATA_DIR, Mode
 from floodsegment.dataloader.base import BaseDataset
 from floodsegment.utils.logutils import setupLogging
 
+from ..utils.tensors import tensor_to_numpy
 from floodsegment.utils.viz import quickmatshow_dict
 
 
@@ -174,8 +176,8 @@ class FloodSample(BaseModel):
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True, arbitrary_types_allowed=True)
 
-    image: np.ndarray
-    mask: np.ndarray
+    image: np.ndarray | Tensor
+    mask: np.ndarray | Tensor
 
     @model_validator(mode="before")
     @classmethod
@@ -227,10 +229,11 @@ class FloodDataset(BaseDataset):
         ), f"sample must be either a dict or a FloodSample, got {type(sample)}"
 
         _sample = sample if isinstance(sample, FloodSample) else FloodSample(**sample)
+        _sample_dict = {k: tensor_to_numpy(v, channels_last=True) for k, v in _sample.model_dump(mode="python").items()}
 
         plotter.add_figure(
             tag="FloodItem",
-            figure=quickmatshow_dict(_sample.model_dump(mode="python"), title="Flood Sample", **kwargs),
+            figure=quickmatshow_dict(_sample_dict, title="Flood Sample", **kwargs),
             global_step=global_step,
             close=close,
             walltime=walltime,

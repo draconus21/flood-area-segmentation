@@ -45,4 +45,4 @@ class Transform(Module):
 
         for k in _keys:
             data_dict[k] = self.transform(data_dict[k])
-        return k
+        return data_dict

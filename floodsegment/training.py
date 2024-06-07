@@ -42,7 +42,6 @@ def prep_from_config(train_config: TrainConfig, plotters: Dict[str, SummaryWrite
     dataset = construct_dataset(train_config.dataset)
     logger.debug(f"Created dataset from {train_config.dataset}")
     sample: Dict = dataset[Mode.TRAIN, 0]
-    img_size = sample["image"].shape
     dataset.visualize(sample, plotters[DATA_PLT])
     logger.debug("Added sample data to tboard")
 
@@ -62,6 +61,7 @@ def prep_from_config(train_config: TrainConfig, plotters: Dict[str, SummaryWrite
         )
         for x in samplers
     }
+
     # get model
     model = construct_model(train_config.model)
     # TODO: Load from checkpoint (in construct_model)
@@ -188,7 +188,7 @@ def _train(
 
             for phase in dataloaders:
                 _dataloader = dataloaders[phase]
-                _phase = Mode(phase.upper())
+                _phase = Mode(phase)
                 kwargs = {
                     "optimizer": train_setup.optimizer,
                     "criterion": train_setup.criterion,
