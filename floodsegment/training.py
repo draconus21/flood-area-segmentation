@@ -187,8 +187,8 @@ def _train(
             logger.info(f"Epoch {epoch}/{n_epochs-1}")
 
             for phase in dataloaders:
-                _dataloader = dataloaders[phase]
                 _phase = Mode(phase)
+                _dataloader = dataloaders[_phase.value]
                 kwargs = {
                     "optimizer": train_setup.optimizer,
                     "criterion": train_setup.criterion,
@@ -198,7 +198,7 @@ def _train(
                 }
                 if _phase == Mode.TRAIN:
                     step_func = model.train_step
-                    kwargs["optimizer"] = (train_setup.optimizer,)
+                    kwargs["optimizer"] = train_setup.optimizer
                 elif _phase == Mode.VALID:
                     step_func = model.valid_step
                 else:
@@ -209,7 +209,7 @@ def _train(
                 for step, sample in enumerate(_dataloader):
                     kwargs["global_step"] = epoch * step
                     loss, outputs = step_func(sample, **kwargs)
-                    running_loss += loss.item() * sample.size(0)
+                    running_loss += loss.item() * _dataloader.batch_size
 
                 if _phase == Mode.TRAIN:
                     train_setup.scheduler.step()

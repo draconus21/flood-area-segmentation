@@ -61,12 +61,12 @@ class AENet(BaseEDNet):
 
         _dec_layer_config = _encoder_params["layer_config"][::-1]
         _dec_channel_config = _encoder_params["channel_config"][::-1]
-        _dec_stride_config = _encoder_params["stride_config"][::-1]
+        # _dec_stride_config = _encoder_params["stride_config"][::-1]
         # _dec_dilation_config = _encoder_params["dilation_config"][::-1]
 
         _dec_input_ch = _dec_channel_config[0]
-        _dec_layer_config = _dec_layer_config[1:]
-        _dec_channel_config = _dec_channel_config[1:]
+        # _dec_layer_config = _dec_layer_config[1:]
+        # _dec_channel_config = _dec_channel_config[1:]
         _dec_stride_config = [1] * len(_dec_channel_config)  # _dec_stride_config[1:]
         # _dec_dilation_config= _dec_dilation_config[1:]
 

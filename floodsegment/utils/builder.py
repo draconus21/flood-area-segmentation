@@ -117,7 +117,6 @@ def construct_sampler(sample_config_path: str, dataset: "BaseDataset") -> Dict:
 
 
 def constrcut_optimizer(optimizer_config_path: str, model: nn.Module):
-    scope = ".optim."
     params = [p for p in model.parameters() if p.requires_grad]
     assert len(params) > 1, f"Model must have at least 1 param to optimize, got {len(params)}"
     logger.info(f"Found {len(params)} params to optimize")

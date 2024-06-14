@@ -54,7 +54,7 @@ class BaseModel(nn.Module):
             device=device,
             global_step=global_step,
             sample_viz=sample_viz,
-            mode=Mode.VALID,
+            mode=Mode.VALID.value,
         )
         return loss, outputs
 
@@ -69,7 +69,7 @@ class BaseModel(nn.Module):
             device=device,
             global_step=global_step,
             sample_viz=sample_viz,
-            mode=Mode.TRAIN,
+            mode=Mode.TRAIN.value,
         )
         loss.backward()
         optimizer.step()
@@ -88,7 +88,7 @@ class FloodModel(BaseModel):
     def compute_loss(self, sample: Dict, *, criterion, device) -> Tuple:
         _sample = self.to_device(sample, device)
         outputs = self.forward(_sample)
-        loss = criterion(outputs, sample["mask"])
+        loss = criterion(outputs.flood_mask, _sample["mask"])
 
         return loss, outputs
 
@@ -96,5 +96,8 @@ class FloodModel(BaseModel):
     def plot(self, sample, outputs, plotter, global_step, sample_viz=None):
         self.eval()
 
+        idx = 0
+        v_sample = {k: v[idx] for k, v in sample.items()}
+
         if sample_viz:
-            sample_viz(sample, plotter, global_step, global_step)
+            sample_viz(v_sample, plotter, global_step=global_step)

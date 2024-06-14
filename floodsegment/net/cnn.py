@@ -154,6 +154,11 @@ class GenericDecoder(GenericCnn):
         base_config: Dict[str, Any],
         **kwargs,
     ) -> nn.ModuleList:
+        # input_ch must be the same as channel_config[0]
+        assert (
+            input_ch == channel_config[0]
+        ), f"# input channels ({input_ch}) must match channel config[0] ({channel_config[0]})"
+
         conv_blocks = super()._build(
             input_ch=input_ch,
             layer_config=layer_config,
@@ -161,6 +166,8 @@ class GenericDecoder(GenericCnn):
             stride_config=stride_config,
             base_config=base_config,
         )
+
+        assert len(conv_blocks) == len(channel_config)
 
         _block = nn.ModuleList()
         up_channel_config = [input_ch, *channel_config[:-1]]
