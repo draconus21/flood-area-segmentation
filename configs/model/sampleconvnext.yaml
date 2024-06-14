@@ -6,7 +6,9 @@ params:
       net_name: 'sample_autoencoder_neXt'
       img_size: [64, 64]
       input_names:
-        - image
+        - image_0
+        - image_1
+        - image_2
       output_names:
         - flood_mask
       decoder_upsample_config:
@@ -16,7 +18,7 @@ params:
         params:
           net_name: "encoder"
           init_kernel_size: 3
-          init_stride: 2
+          init_stride: 1
           init_activation: &activation
             name: torch.nn.ReLU
           init_normalization: &normalization

@@ -6,3 +6,9 @@ params:
     torchvision.transforms.ToTensor: {}
     torchvision.transforms.v2.RandomCrop:
       size: [64, 64]
+    floodsegment.dataloader.transforms.Split_RGB:
+      io_is_dict: True
+      keys:
+        - image
+      tkeys:
+        - image

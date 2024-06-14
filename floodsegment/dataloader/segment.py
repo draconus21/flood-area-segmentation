@@ -213,7 +213,7 @@ class FloodDataset(BaseDataset):
 
     def visualize(
         self,
-        sample: FloodSample,
+        sample: Dict | FloodSample,
         plotter: SummaryWriter,
         *,
         global_step: Optional[int] = None,
@@ -228,8 +228,8 @@ class FloodDataset(BaseDataset):
             sample, FloodSample
         ), f"sample must be either a dict or a FloodSample, got {type(sample)}"
 
-        _sample = sample if isinstance(sample, FloodSample) else FloodSample(**sample)
-        _sample_dict = {k: tensor_to_numpy(v, channels_last=True) for k, v in _sample.model_dump(mode="python").items()}
+        _sample = sample.model_dump(mode="python") if isinstance(sample, FloodSample) else sample
+        _sample_dict = {k: tensor_to_numpy(v, channels_last=True) for k, v in _sample.items()}
 
         plotter.add_figure(
             tag="FloodItem",
