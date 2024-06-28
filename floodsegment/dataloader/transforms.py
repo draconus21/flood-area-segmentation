@@ -1,22 +1,35 @@
+import torch  # needed for eval (dtype) in ToDtype
+import numpy as np
 from torch.nn import Module
+from torchvision.transforms.v2 import Compose
+from torchvision.transforms import ToTensor as _ToTensor
+from torchvision.transforms.v2 import Transform as _Transform
+from torchvision.transforms.v2 import ToDtype as _ToDtype
 from typing import Callable, Optional, List, Dict
 
 from floodsegment.utils.builder import build_object
 
+from logging import getLogger
+
+logger = getLogger(__name__)
+
 
 def init_transforms(transform_dict: dict):
     _trans_params = ["keys", "skip_keys", "io_is_dict"]
-    t_dict = {}
+    t_compose = []
     for t_name, params in transform_dict.items():
         hyper_params = {k: params.pop(k) for k in _trans_params if k in params}
-        t_dict[t_name] = Transform(
-            transform_obj=build_object(t_name, params=params),
-            **hyper_params,
+        t_compose.append(
+            Transform(
+                transform_obj=build_object(t_name, params=params),
+                **hyper_params,
+            )
         )
-    return t_dict
+        logger.debug(f"Added transform {t_name}: {t_compose[-1]}")
+    return Compose(t_compose)
 
 
-class Transform(Module):
+class Transform(_Transform):
     def __init__(
         self,
         transform_obj: Callable,
@@ -70,3 +83,25 @@ class Split_RGB(Module):
                 x[f"{k}_{ch}"] = _x[ch].unsqueeze(0)
 
         return x
+
+
+class ToTensor(Module):
+    def __init__(self):
+        super().__init__()
+        self._transform = _ToTensor()
+
+    def __call__(self, x):
+        if isinstance(x, str) or isinstance(x, torch.Tensor):
+            return x
+        return self._transform(np.array(x.astype(np.float32)))
+
+
+class ToDtype(Module):
+    def __init__(self, dtype: str, **kwargs):
+        super().__init__()
+        kwargs["dtype"] = eval(dtype)
+        self.kwargs = kwargs
+        self._transform = _ToDtype(**kwargs)
+
+    def __call__(self, x):
+        return self._transform(x)

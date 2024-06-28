@@ -31,7 +31,7 @@ class BaseDataset(Dataset):
         self.n_samples: int = 0
 
         self.split_ratio: Dict[Mode, float] = {}
-        self.transform_dict = init_transforms(transform_dict)
+        self.transforms = init_transforms(transform_dict)
 
         self._update_from_split_file(split_file=split_file, split_ratio=split_ratio)
 
@@ -52,10 +52,7 @@ class BaseDataset(Dataset):
         _item = self.process_split_item(self.items[key][idx])
 
         # apply transforms
-        for k, t in self.transform_dict.items():
-            _item = t(_item)
-            logger.debug(f"applied {k}", extra={'limit": 1'})
-        return _item
+        return self.transforms(_item)
 
     def __len__(self):
         return self.n_samples
