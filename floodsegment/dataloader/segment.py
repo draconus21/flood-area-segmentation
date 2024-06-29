@@ -26,7 +26,11 @@ logger = logging.getLogger(__name__)
 
 
 def load_img(im_path: str) -> np.ndarray:
-    return np.array(iio.imread(im_path))
+    im = np.array(iio.imread(im_path))
+    if len(im.shape) == 4:
+        im = im.squeeze()
+        logger.warning(f"Got 4-dim image, squeeze it to {len(im.shape)} dims: {im_path}", extra={"limit": 1})
+    return im
 
 
 @click.command()
@@ -191,6 +195,11 @@ class FloodSample(BaseModel):
         _data = {"image": load_img(fitem.image), "mask": load_img(fitem.mask)}
 
         return _data
+
+    @field_validator("image", "mask")
+    def v_im(cls, val):
+        assert len(val.shape) in [2, 3]
+        return val
 
 
 class FloodDataset(BaseDataset):

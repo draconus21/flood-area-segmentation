@@ -175,7 +175,6 @@ def _train(
 
         model = train_setup.model
         dataloaders = train_setup.dataloaders
-        samplers = train_setup.samplers
 
         def _save_best():
             logger.debug(f"best params [loss: {best_loss}] saved to: {best_model_params_path}")
