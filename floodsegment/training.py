@@ -189,7 +189,6 @@ def _train(
                 _phase = Mode(phase)
                 _dataloader = dataloaders[_phase.value]
                 kwargs = {
-                    "optimizer": train_setup.optimizer,
                     "criterion": train_setup.criterion,
                     "plotters": plotters,
                     "device": device,
@@ -211,7 +210,7 @@ def _train(
                     running_loss += loss.item() * _dataloader.batch_size
 
                 if _phase == Mode.TRAIN:
-                    train_setup.scheduler.step()
+                    train_setup.scheduler.step(running_loss)
 
                 epoch_loss = running_loss / len(_dataloader)
                 logger.info(f"{_phase} loss: {epoch_loss}")
