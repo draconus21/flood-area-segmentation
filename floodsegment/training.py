@@ -1,6 +1,8 @@
 import time
 import click
 import torch
+from tqdm import tqdm
+
 from pathlib import Path
 from logging import getLogger
 from tempfile import TemporaryDirectory
@@ -182,7 +184,7 @@ def _train(
 
         _save_best()
 
-        for epoch in range(n_epochs):
+        for epoch in (pbar := tqdm(range(n_epochs), desc="Training")):
             logger.info(f"Epoch {epoch}/{n_epochs-1}")
 
             for phase in dataloaders:
@@ -218,6 +220,9 @@ def _train(
                 epoch_loss = running_loss / len(_dataloader)
                 logger.info(f"{_phase} loss: {epoch_loss}")
                 plotters[phase].add_scalar("Loss", epoch_loss, kwargs["global_step"])
+
+                if _phase == Mode.VALID:
+                    pbar.set_description(f"valid loss: {epoch_loss:.2f}")
 
     time_elapsed = time.time() - since
     logger.info(f"Training complete in {time_elapsed//60:.0f}m {time_elapsed%60:.0f}s")
