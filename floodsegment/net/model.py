@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from abc import ABC, abstractmethod
 from floodsegment import Mode
 from ..utils.tensors import tensor_to_numpy
 from ..utils.viz import quickmatshow_dict
@@ -13,7 +14,7 @@ from logging import getLogger
 logger = getLogger(__name__)
 
 
-class BaseModel(nn.Module):
+class BaseModel(nn.Module, ABC):
     def __init__(self, net: Dict[str, Any]):
         super(__class__, self).__init__()
         assert ".net." in net["name"], f"All cnns must be placed in net, got {net['name']}"
@@ -27,28 +28,31 @@ class BaseModel(nn.Module):
 
         return _to_dvc(data)
 
-    def compute_loss(self, sample, *, criterion, device) -> Tuple:
-        raise NotImplementedError()
+    @abstractmethod
+    def compute_loss(self, sample, outputs, *, criterion):
+        pass
 
+    @abstractmethod
     @torch.no_grad()
     def plot(self, sample, outputs, plotter, *, global_step, sample_viz=None):
-        raise NotImplementedError()
+        pass
 
     def plot_step(self, sample, outputs, plotter, global_step, sample_viz=None, frequency=500):
         if global_step % frequency == 0:
             self.plot(sample, outputs, plotter=plotter, global_step=global_step, sample_viz=sample_viz)
             logger.debug(f"Plotted data at global_step: {global_step}")
 
-    def inference_step(self, sample, *, criterion, device):
-        loss, outputs = self.compute_loss(sample, criterion=criterion, device=device)
-        return loss, outputs
+    def inference_step(self, sample):
+        outputs = self.forward(sample)
+        return outputs
 
     @torch.no_grad()
     def valid_step(self, sample, *, criterion, plotters, device, global_step, sample_viz=None, plot_freq: int = 500):
         self.eval()
         logger.debug(f"{self.name} in eval mode")
 
-        loss, outputs = self.inference_step(sample, criterion=criterion, device=device)
+        _sample = self.to_device(sample, device)
+        outputs = self.inference_step(_sample)
         self.plot_step(
             sample,
             outputs,
@@ -57,6 +61,7 @@ class BaseModel(nn.Module):
             sample_viz=sample_viz,
             frequency=plot_freq,
         )
+        loss = self.compute_loss(_sample, outputs, criterion=criterion)
         return loss, outputs
 
     def train_step(
@@ -65,7 +70,8 @@ class BaseModel(nn.Module):
         self.train()
         logger.debug(f"{self.name} in train mode")
 
-        loss, outputs = self.inference_step(sample, criterion=criterion, device=device)
+        _sample = self.to_device(sample, device)
+        outputs = self.inference_step(_sample)
         self.plot_step(
             sample,
             outputs,
@@ -74,6 +80,7 @@ class BaseModel(nn.Module):
             sample_viz=sample_viz,
             frequency=plot_freq,
         )
+        loss = self.compute_loss(_sample, outputs, criterion=criterion)
         loss.backward()
         optimizer.step()
         optimizer.zero_grad()
@@ -88,12 +95,9 @@ class FloodModel(BaseModel):
     def __init__(self, net: Dict[str, Any]):
         super(__class__, self).__init__(net=net)
 
-    def compute_loss(self, sample: Dict, *, criterion, device) -> Tuple:
-        _sample = self.to_device(sample, device)
-        outputs = self.forward(_sample)
-        loss = criterion(outputs.flood_mask, _sample["mask"])
-
-        return loss, outputs
+    def compute_loss(self, sample, outputs, *, criterion):
+        loss = criterion(outputs.flood_mask, sample["mask"])
+        return loss
 
     @torch.no_grad()
     def plot(
