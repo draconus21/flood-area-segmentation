@@ -211,9 +211,13 @@ def _train(
 
                 if _phase == Mode.TRAIN:
                     train_setup.scheduler.step(running_loss)
+                    plotters["general"].add_scalar(
+                        "LR", train_setup.optimizer.param_groups[0]["lr"], kwargs["global_step"]
+                    )
 
                 epoch_loss = running_loss / len(_dataloader)
                 logger.info(f"{_phase} loss: {epoch_loss}")
+                plotters[phase].add_scalar("Loss", epoch_loss, kwargs["global_step"])
 
     time_elapsed = time.time() - since
     logger.info(f"Training complete in {time_elapsed//60:.0f}m {time_elapsed%60:.0f}s")
