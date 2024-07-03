@@ -14,6 +14,38 @@ from floodsegment import PKG_DIR, LOG_CFG, LOG_DIR
 logger = logging.getLogger(__name__)
 
 
+class N_TimesOnlyFilter(logging.Filter):
+    """
+    This filter allows only a maximum of n occurrences of logs with identical message, path name and function name to pass.
+
+    To enable this filter, add "extra={'limit': n}", where n in the maximum number of times you want that  message to be logged.
+    e.g., logging.info('This message is logged only twice', extra={'limit':2})
+
+    Messages without the "extra={'limit': n}" will NOT be filtered
+    """
+
+    def __init__(self):
+        super().__init__()
+        # dict to keep track of how many times a message has been logged
+        self.msg_dict = {}
+
+    def filter(self, record):
+        """
+        Check if the message has already been logged and return True only if the message has been logged `limit` times or fewer
+        """
+        if not hasattr(record, "limit"):
+            return True
+
+        msg_key = f"{record.msg}@{record.pathname}:{record.funcName}"
+        count = self.msg_dict.setdefault(msg_key, 1)
+
+        if count <= record.limit:
+            self.msg_dict[msg_key] = count + 1
+            return True
+
+        return False
+
+
 def makeDictJsonReady(dictData: dict):
     def sanitize(value):
         if type(value) in [np.float, np.float16, np.float32, np.float64]:
