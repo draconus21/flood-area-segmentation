@@ -31,47 +31,48 @@ class BaseModel(nn.Module):
         raise NotImplementedError()
 
     @torch.no_grad()
-    def plot(self, sample, outputs, *, plotter, global_step, sample_viz=None):
+    def plot(self, sample, outputs, plotter, *, global_step, sample_viz=None):
         raise NotImplementedError()
 
-    def plot_step(self, sample, outputs, plotters, global_step, mode, sample_viz=None, frequency=500):
+    def plot_step(self, sample, outputs, plotter, global_step, sample_viz=None, frequency=500):
         if global_step % frequency == 0:
-            self.plot(sample, outputs, plotter=plotters[mode], global_step=global_step, sample_viz=sample_viz)
+            self.plot(sample, outputs, plotter=plotter, global_step=global_step, sample_viz=sample_viz)
             logger.debug(f"Plotted data at global_step: {global_step}")
 
-    def inference_step(self, sample, *, criterion, plotters, device, mode, global_step, sample_viz=None):
+    def inference_step(self, sample, *, criterion, device):
         loss, outputs = self.compute_loss(sample, criterion=criterion, device=device)
-        self.plot_step(sample, outputs, plotters=plotters, global_step=global_step, mode=mode, sample_viz=sample_viz)
         return loss, outputs
 
     @torch.no_grad()
-    def valid_step(self, sample, *, criterion, plotters, device, global_step, sample_viz=None):
+    def valid_step(self, sample, *, criterion, plotters, device, global_step, sample_viz=None, plot_freq: int = 500):
         self.eval()
         logger.debug(f"{self.name} in eval mode")
 
-        loss, outputs = self.inference_step(
+        loss, outputs = self.inference_step(sample, criterion=criterion, device=device)
+        self.plot_step(
             sample,
-            criterion=criterion,
-            plotters=plotters,
-            device=device,
+            outputs,
+            plotter=plotters[Mode.VALID.value],
             global_step=global_step,
             sample_viz=sample_viz,
-            mode=Mode.VALID.value,
+            frequency=plot_freq,
         )
         return loss, outputs
 
-    def train_step(self, sample, *, optimizer, criterion, plotters, device, global_step, sample_viz=None):
+    def train_step(
+        self, sample, *, optimizer, criterion, plotters, device, global_step, sample_viz=None, plot_freq: int = 500
+    ):
         self.train()
         logger.debug(f"{self.name} in train mode")
 
-        loss, outputs = self.inference_step(
+        loss, outputs = self.inference_step(sample, criterion=criterion, device=device)
+        self.plot_step(
             sample,
-            criterion=criterion,
-            plotters=plotters,
-            device=device,
+            outputs,
+            plotter=plotters[Mode.TRAIN.value],
             global_step=global_step,
             sample_viz=sample_viz,
-            mode=Mode.TRAIN.value,
+            frequency=plot_freq,
         )
         loss.backward()
         optimizer.step()

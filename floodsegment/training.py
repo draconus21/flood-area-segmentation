@@ -198,8 +198,10 @@ def _train(
                 }
                 if _phase == Mode.TRAIN:
                     step_func = model.train_step
+                    kwargs["plot_freq"] = 400
                     kwargs["optimizer"] = train_setup.optimizer
                 elif _phase == Mode.VALID:
+                    kwargs["plot_freq"] = 100
                     step_func = model.valid_step
                 else:
                     raise NotImplementedError(f"No step function implemeted for phase: {phase}")
@@ -219,7 +221,7 @@ def _train(
 
                 epoch_loss = running_loss / len(_dataloader)
                 logger.info(f"{_phase} loss: {epoch_loss}")
-                plotters[phase].add_scalar("Loss", epoch_loss, kwargs["global_step"])
+                plotters[phase].add_scalar("Loss", epoch_loss, epoch)
 
                 if _phase == Mode.VALID:
                     pbar.set_description(f"valid loss: {epoch_loss:.2f}")
