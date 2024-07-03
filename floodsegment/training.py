@@ -207,7 +207,7 @@ def _train(
                 running_loss = 0.0
 
                 for step, sample in enumerate(_dataloader):
-                    kwargs["global_step"] = epoch * step
+                    kwargs["global_step"] = n_epochs * epoch + step
                     loss, outputs = step_func(sample, **kwargs)
                     running_loss += loss.item() * _dataloader.batch_size
 

@@ -240,8 +240,9 @@ class FloodDataset(BaseDataset):
         _sample = sample.model_dump(mode="python") if isinstance(sample, FloodSample) else sample
         _sample_dict = {k: tensor_to_numpy(v, channels_last=True) for k, v in _sample.items()}
 
+        tag = kwargs.pop("tag", "FloodItem")
         plotter.add_figure(
-            tag="FloodItem",
+            tag=tag,
             figure=quickmatshow_dict(_sample_dict, title="Flood Sample", **kwargs),
             global_step=global_step,
             close=close,

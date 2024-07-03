@@ -1,10 +1,12 @@
 import torch
 from torch import nn
 from floodsegment import Mode
-from floodsegment.utils.misc import recursive_wrapper
-from floodsegment.utils.builder import build_object
+from ..utils.tensors import tensor_to_numpy
+from ..utils.viz import quickmatshow_dict
+from ..utils.misc import recursive_wrapper
+from ..utils.builder import build_object
 
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, Optional
 
 from logging import getLogger
 
@@ -32,7 +34,7 @@ class BaseModel(nn.Module):
     def plot(self, sample, outputs, *, plotter, global_step, sample_viz=None):
         raise NotImplementedError()
 
-    def plot_step(self, sample, outputs, plotters, global_step, mode, sample_viz=None, frequency=50):
+    def plot_step(self, sample, outputs, plotters, global_step, mode, sample_viz=None, frequency=5):
         if global_step % frequency == 0:
             self.plot(sample, outputs, plotter=plotters[mode], global_step=global_step, sample_viz=sample_viz)
             logger.debug(f"Plotted data at global_step: {global_step}")
@@ -93,11 +95,30 @@ class FloodModel(BaseModel):
         return loss, outputs
 
     @torch.no_grad()
-    def plot(self, sample, outputs, plotter, global_step, sample_viz=None):
+    def plot(
+        self,
+        sample,
+        outputs,
+        plotter,
+        *,
+        global_step,
+        sample_viz=None,
+        close: bool = True,
+        walltime: Optional[float] = None,
+    ):
         self.eval()
 
         idx = 0
-        v_sample = {k: v[idx] for k, v in sample.items()}
+        v_sample = {k: tensor_to_numpy(v[idx]) for k, v in sample.items()}
+        v_output = {k: tensor_to_numpy(v[idx]) for k, v in outputs._asdict().items()}
 
         if sample_viz:
-            sample_viz(v_sample, plotter, global_step=global_step)
+            sample_viz(v_sample, plotter, global_step=global_step, tag="model inputs")
+
+        plotter.add_figure(
+            tag="Pred",
+            figure=quickmatshow_dict(v_output, title="model outs"),
+            global_step=global_step,
+            close=close,
+            walltime=walltime,
+        )
