@@ -79,6 +79,12 @@ class Split_RGB(Module):
 
         for k in _keys:
             _x = x.pop(k)
+            if _x.shape[0] != 3:
+                logger.warning(f"Expecting 3-channel array, got {_x.shape[0]}-channel array", extra={"limit": 1})
+            if _x.shape[0] > 3:
+                _x = _x[:3]
+                logger.warning(f"using only first 4 channels", extra={"limit": 1})
+
             for ch in range(_x.shape[0]):
                 x[f"{k}_{ch}"] = _x[ch].unsqueeze(0)
 
