@@ -49,7 +49,6 @@ def prep_from_config(train_config: TrainConfig, plotters: Dict[str, SummaryWrite
 
     # get samplers
     samplers = construct_sampler(train_config.samplers, dataset=dataset)
-    logger.info(f"Loaded samplers: {[k for k in samplers]} from {train_config.samplers}")
 
     # get dataloaders
     dataloaders = {
@@ -63,6 +62,7 @@ def prep_from_config(train_config: TrainConfig, plotters: Dict[str, SummaryWrite
         )
         for x in samplers
     }
+    logger.info(f"Loaded dataloaders: {[(k, len(v)) for k,v in dataloaders.items()]} from {train_config.samplers}")
 
     # get model
     model = construct_model(train_config.model)

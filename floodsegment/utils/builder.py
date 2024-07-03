@@ -112,7 +112,7 @@ def construct_sampler(sample_config_path: str, dataset: "BaseDataset") -> Dict:
     for k in sample_config:
         s_config = BuildableType(**sample_config[k])
         assert scope in s_config.name, f"Must be placed in {scope}, got {s_config.name}"
-        samplers[k] = build_object(**s_config.model_dump(mode="str"), overrides={"data_source": dataset})
+        samplers[k] = build_object(**s_config.model_dump(mode="str"), overrides={"data_source": dataset, "mode": k})
     return samplers
 
 

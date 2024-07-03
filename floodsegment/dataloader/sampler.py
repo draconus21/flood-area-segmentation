@@ -16,7 +16,8 @@ class DictSampler(RandomSampler):
         # TODO: Create a base Dataset class that uses dicts, and use that for data_source type annotation
         self,
         data_source: BaseDataset,
-        mode: str | Mode = Mode.TRAIN,
+        mode: str | Mode,
+        *,
         ratio: float = 1.0,
         shuffle: bool = True,
         **random_sampler_kwargs,
