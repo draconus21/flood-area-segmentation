@@ -34,7 +34,7 @@ class BaseModel(nn.Module):
     def plot(self, sample, outputs, *, plotter, global_step, sample_viz=None):
         raise NotImplementedError()
 
-    def plot_step(self, sample, outputs, plotters, global_step, mode, sample_viz=None, frequency=5):
+    def plot_step(self, sample, outputs, plotters, global_step, mode, sample_viz=None, frequency=500):
         if global_step % frequency == 0:
             self.plot(sample, outputs, plotter=plotters[mode], global_step=global_step, sample_viz=sample_viz)
             logger.debug(f"Plotted data at global_step: {global_step}")
