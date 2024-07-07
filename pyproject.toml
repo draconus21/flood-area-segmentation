@@ -13,6 +13,7 @@
     "Programming Language :: Python :: 3.10"
   ]
   dependencies=[
+    "tqdm",
     "imageio",
     "pydantic",
     "click",
@@ -23,7 +24,10 @@
     "seaborn",
     "torch",
     "torchvision",
-    "torchaudio"
+    "torchaudio",
+    "protobuf<=4.25",        # temporary fix https://github.com/tensorflow/tensorboard/issues/6808
+    "tensorboard",
+    "pyyaml"
   ]
   description="Expriments with Kaggle Flood Area Segmentation dataset (https://www.kaggle.com/datasets/faizalkarim/flood-area-segmentation)"
   dynamic=[ "readme" ]
@@ -34,11 +38,12 @@
   version="0.0.1"
 
 [project.optional-dependencies]
-  dev =[ "black", "build", "tox", "coverage", "Sphinx", "twine", "click", "pytest", "black" ]
+  dev =[ "torch-summary", "black", "build", "tox", "coverage", "Sphinx", "twine", "click", "pytest", "black" ]
   test=[ "tox", "coverage", "Sphinx", "twine", "click", "pytest", "black" ]
 
 [project.scripts]
   "floodsegment.generate_split"="floodsegment.dataloader.segment:generate_split_cli"
+  "floodsegment.train"         ="floodsegment.training:train_cli"
 
 [project.urls]
   changelog ="https://gitlab.com/draconus21/floodsegment/blob/master/CHANGELOG.md"

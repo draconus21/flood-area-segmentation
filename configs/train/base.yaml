@@ -1,0 +1,10 @@
+version: 1
+batch_size: 8
+num_workers: 4
+name: base-flood
+dataset: ../dataset/flood.yaml
+samplers: ../sampler/flood.yaml
+model: ../model/sampleconvnext.yaml
+scheduler: ../scheduler/reduceLR.yaml
+optimizer: ../optimizer/adamw.yaml
+criterion: ../criterion/flood.yaml

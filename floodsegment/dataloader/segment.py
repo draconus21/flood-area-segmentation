@@ -2,18 +2,23 @@ import click
 import csv
 import json
 import random
-import warnings
+from torch import Tensor
 import numpy as np
 import imageio.v3 as iio
 from pathlib import Path
+from torch.utils.tensorboard.writer import SummaryWriter
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from floodsegment import DATA_DIR, Mode
 from floodsegment.dataloader.base import BaseDataset
 from floodsegment.utils.logutils import setupLogging
+
+from ..utils.tensors import tensor_to_numpy
+from floodsegment.utils.viz import quickmatshow_dict
+
 
 import logging
 
@@ -21,7 +26,11 @@ logger = logging.getLogger(__name__)
 
 
 def load_img(im_path: str) -> np.ndarray:
-    return np.array(iio.imread(im_path))
+    im = np.array(iio.imread(im_path))
+    if len(im.shape) == 4:
+        im = im.squeeze()
+        logger.warning(f"Got 4-dim image, squeeze it to {len(im.shape)} dims: {im_path}", extra={"limit": 1})
+    return im
 
 
 @click.command()
@@ -87,7 +96,7 @@ def generate_split(
     _data_dir = data_dir if isinstance(data_dir, Path) else Path(data_dir)
     _split_file_name = (_data_dir / split_file_name).absolute().with_suffix(".json")
 
-    m_data: List[FloodItem] = []
+    m_data: List[Dict] = []
     with open(_data_dir / "metadata.csv", "r") as m:
         m_reader = csv.reader(m)
         header = m_reader.__next__()
@@ -133,7 +142,7 @@ def generate_split(
     with open(_split_file_name, "w") as s_file:
         json.dump(split_json, s_file, indent=4)
 
-    logger.info(f"split file writted to {_split_file_name}")
+    logger.info(f"split file written to {_split_file_name}")
 
 
 class FloodItem(BaseModel):
@@ -171,13 +180,14 @@ class FloodSample(BaseModel):
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True, arbitrary_types_allowed=True)
 
-    image: np.ndarray
-    mask: np.ndarray
+    image: np.ndarray | Tensor
+    mask: np.ndarray | Tensor
 
     @model_validator(mode="before")
     @classmethod
     def m_before(cls, data: Dict):
-        assert "flood_item" in data
+        if "flood_item" not in data:
+            return data
 
         fitem = data.pop("flood_item")
         assert isinstance(fitem, FloodItem)
@@ -185,6 +195,11 @@ class FloodSample(BaseModel):
         _data = {"image": load_img(fitem.image), "mask": load_img(fitem.mask)}
 
         return _data
+
+    @field_validator("image", "mask")
+    def v_im(cls, val):
+        assert len(val.shape) in [2, 3]
+        return val
 
 
 class FloodDataset(BaseDataset):
@@ -201,9 +216,38 @@ class FloodDataset(BaseDataset):
             split_ratio=split_ratio,
         )
 
-    def process_flood_item(self, item: FloodItem) -> FloodSample:
+    def process_split_item(self, item: FloodItem) -> Dict:
         sample = FloodSample(flood_item=item)
-        return sample
+        return sample.model_dump(mode="python")
+
+    def visualize(
+        self,
+        sample: Dict | FloodSample,
+        plotter: SummaryWriter,
+        *,
+        global_step: Optional[int] = None,
+        close: bool = True,
+        walltime: Optional[float] = None,
+        **kwargs,
+    ):
+        """
+        Visualize a flood sample
+        """
+        assert isinstance(sample, dict) or isinstance(
+            sample, FloodSample
+        ), f"sample must be either a dict or a FloodSample, got {type(sample)}"
+
+        _sample = sample.model_dump(mode="python") if isinstance(sample, FloodSample) else sample
+        _sample_dict = {k: tensor_to_numpy(v, channels_last=True) for k, v in _sample.items()}
+
+        tag = kwargs.pop("tag", "FloodItem")
+        plotter.add_figure(
+            tag=tag,
+            figure=quickmatshow_dict(_sample_dict, title="Flood Sample", **kwargs),
+            global_step=global_step,
+            close=close,
+            walltime=walltime,
+        )
 
 
 if __name__ == "__main__":

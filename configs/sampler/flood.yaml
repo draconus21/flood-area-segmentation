@@ -1,0 +1,10 @@
+train:
+  name: floodsegment.dataloader.sampler.DictSampler
+  params:
+    ratio: 1
+    shuffle: True
+valid:
+  name: floodsegment.dataloader.sampler.DictSampler
+  params:
+    ratio: 1
+    shuffle: False

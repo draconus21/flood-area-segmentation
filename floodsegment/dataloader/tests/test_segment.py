@@ -44,8 +44,8 @@ def test_basic(data_dir: Path = DATA_DIR):
 @pytest.mark.parametrize(
     "split_ratio",
     [
-        {"TRAIN": 0.5, "TEST": 0.5, "VALID": 0.5},
-        {"TRAIN": 0.5},
+        {"train": 0.5, "test": 0.5, "valid": 0.5},
+        {"train": 0.5},
         {"bad_train": 0.1},
         *list(set([1, *np.random.rand(3)])),
     ],
@@ -63,9 +63,9 @@ def test_FloodDataset(split_file: str | Path, split_ratio: float | Dict[str, flo
 
     assert fd.split_file == _split_file
     assert fd.items is not None
-    assert Mode("TRAIN") in fd.items
-    assert Mode("VALID") in fd.items
-    assert Mode("TEST") in fd.items
+    assert Mode("train").value in fd.items
+    assert Mode("valid").value in fd.items
+    assert Mode("test").value in fd.items
 
     n_total = 0
     for k in fd.items:

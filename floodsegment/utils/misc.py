@@ -1,13 +1,84 @@
+import re
 import os
 import json
 import shutil
 import logging
+from glob import glob
+from functools import wraps
+
 
 from copy import deepcopy
 from pathlib import Path
 from configparser import ConfigParser
 
 from floodsegment.utils import logutils
+
+from typing import List
+
+
+def recursive_wrapper(f):
+    """
+    recurses over args[0]
+
+    The idea is that `f` is a function that performs some operation
+    on a unit element.
+    If you then want to recursive apply that same operation to a list
+    or a dictionary or list of dicts or dicts of lists or any similar
+    combination of this unit element, this wrapper will do that for you.
+
+    So you as a dev need only worry about the unit operation `f`.
+    could look like)
+    """
+
+    @wraps(f)
+    def recursive_f(*args, **kwargs):
+        v = args[0]
+        if isinstance(v, list):
+            res = []
+            for ele in v:
+                res.append(recursive_f(ele, *args[1:], **kwargs))
+            return res
+        elif isinstance(v, dict):
+            res = {}
+            for k in v:
+                res[k] = recursive_f(v[k], *args[1:], **kwargs)
+            return res
+        else:
+            return f(v, *args[1:], **kwargs)
+
+    return recursive_f
+
+
+@recursive_wrapper
+def is_file_of_type(fname: str, ext) -> bool:
+    if not isinstance(fname, str) or not fname.endswith(ext):
+        raise ValueError(f"{fname} must be of type {ext}")
+    return True
+
+
+@recursive_wrapper
+def normalize_path(path: str | Path, is_file: bool, ext: str = ""):
+    """
+    This function returns the full path (string) if the file or directory exists.
+    Raises FileNotFoundError if file or directory is not found.
+
+    Args:
+        path:  Input path of file or directory to be found
+        is_file: True if path provided is a file, False if path is a directory.
+
+    """
+    path = Path(path).resolve()
+    secondary_test = path.is_file() if is_file else path.is_dir()
+    test_name = "file" if is_file else "directory"
+
+    if not path.exists():
+        raise FileNotFoundError(f"{path} must be a valid path that exists")
+    if not secondary_test:
+        raise FileNotFoundError(f"{path} must be a {test_name}")
+    if ext:
+        is_file_of_type(str(path), ext)
+
+    return str(path.resolve())
 
 
 def userInput(prompt, castFunc=None):
@@ -43,6 +114,13 @@ def mkdirs(fname, deleteIfExists=False):
 
     logging.debug(f"\ncreating dir: {p}")
     os.makedirs(p, exist_ok=True)
+
+
+def get_files_in_dir(search_dir: str | Path, match_pattern: str, **iglob_kwargs) -> List[str]:
+    return [
+        str((Path(search_dir) / fname).resolve())
+        for fname in sorted(glob(match_pattern, root_dir=search_dir, **iglob_kwargs))
+    ]
 
 
 def getValue(string, regEx, key):

@@ -9,9 +9,41 @@ import matplotlib.pyplot as plt
 
 from copy import deepcopy
 
-from floodsegment import ROOT_DIR, LOG_CFG, LOG_DIR
+from floodsegment import PKG_DIR, LOG_CFG, LOG_DIR
 
 logger = logging.getLogger(__name__)
+
+
+class N_TimesOnlyFilter(logging.Filter):
+    """
+    This filter allows only a maximum of n occurrences of logs with identical message, path name and function name to pass.
+
+    To enable this filter, add "extra={'limit': n}", where n in the maximum number of times you want that  message to be logged.
+    e.g., logging.info('This message is logged only twice', extra={'limit':2})
+
+    Messages without the "extra={'limit': n}" will NOT be filtered
+    """
+
+    def __init__(self):
+        super().__init__()
+        # dict to keep track of how many times a message has been logged
+        self.msg_dict = {}
+
+    def filter(self, record):
+        """
+        Check if the message has already been logged and return True only if the message has been logged `limit` times or fewer
+        """
+        if not hasattr(record, "limit"):
+            return True
+
+        msg_key = f"{record.msg}@{record.pathname}:{record.funcName}"
+        count = self.msg_dict.setdefault(msg_key, 1)
+
+        if count <= record.limit:
+            self.msg_dict[msg_key] = count + 1
+            return True
+
+        return False
 
 
 def makeDictJsonReady(dictData: dict):
@@ -111,11 +143,11 @@ def setupLogging(console_level: str = "INFO", root_level="INFO", log_cfg: str = 
     logstr = []
     try:
         if not log_cfg:
-            log_cfg = os.path.join(ROOT_DIR, LOG_CFG)
+            log_cfg = os.path.join(PKG_DIR, LOG_CFG)
         logstr.append(f"logging config: {log_cfg}")
 
         if not log_dir:
-            log_dir = os.path.join(ROOT_DIR, LOG_DIR)
+            log_dir = os.path.join(PKG_DIR, LOG_DIR)
         logstr.append(f"logs to be written to {log_dir}")
         console_level = console_level.upper()
         root_level = root_level.upper()
@@ -125,6 +157,12 @@ def setupLogging(console_level: str = "INFO", root_level="INFO", log_cfg: str = 
                 os.makedirs(log_dir)
             with open(log_cfg, "rt") as f:
                 config = json.load(f)
+
+                if logging.getLevelName(console_level) < logging.getLevelName(root_level):
+                    logstr.append(f"root logger level [{root_level}] < [{console_level}] console logger level.")
+                    logstr.append(f"overriding provided root log level: {root_level} -> {console_level}")
+                    root_level = console_level
+
                 config["root"]["level"] = root_level
                 logstr.append(f"root log level: {root_level}")
 
