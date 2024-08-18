@@ -10,11 +10,19 @@
             "datefmt": "%H:%M:%S"
         }
     },
+    "filters": {
+        "log_only_n_times": {
+            "()": "floodsegment.utils.logutils.N_TimesOnlyFilter"
+        }
+    },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
             "level": "WARNING",
             "formatter": "console",
+            "filters": [
+                "log_only_n_times"
+            ],
             "stream": "ext://sys.stdout"
         },
         "debug_file_handler": {
@@ -24,6 +32,9 @@
             "filename": "debug.log",
             "maxBytes": 10485760,
             "backupCount": 20,
+            "filters": [
+                "log_only_n_times"
+            ],
             "encoding": "utf8"
         },
         "info_file_handler": {
@@ -33,6 +44,9 @@
             "filename": "info.log",
             "maxBytes": 10485760,
             "backupCount": 20,
+            "filters": [
+                "log_only_n_times"
+            ],
             "encoding": "utf8"
         },
         "error_file_handler": {
@@ -42,6 +56,9 @@
             "filename": "errors.log",
             "maxBytes": 10485760,
             "backupCount": 20,
+            "filters": [
+                "log_only_n_times"
+            ],
             "encoding": "utf8"
         }
     },

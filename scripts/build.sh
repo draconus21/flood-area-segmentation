@@ -91,8 +91,11 @@ function install_dev() {
     cyan "[install-dev] start"
 
     # install package locally
-    pip install --upgrade pip
-    pip install -e $FSEG_DIR[dev]
+    pip install --upgrade pip || red "caught pip upgrade error"
+    curdir="$(pwd)"
+    cd $FSEG_DIR
+    pip install -e .[dev]
+    cd $curdir
     cyan "[install-dev] end"
 }
 

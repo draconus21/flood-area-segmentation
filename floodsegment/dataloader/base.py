@@ -1,11 +1,15 @@
 import json
 import numpy as np
 from pathlib import Path
-from pydantic import BaseModel
 from torch.utils.data import Dataset
+from torch.utils.tensorboard.writer import SummaryWriter
 
 from floodsegment import Mode
-from typing import Dict, List, Tuple
+from floodsegment.dataloader.transforms import init_transforms
+from floodsegment.utils.builder import BaseModel
+
+from typing import OrderedDict, Dict, List, Tuple, Type
+
 
 import logging
 
@@ -15,28 +19,40 @@ logger = logging.getLogger(__name__)
 class BaseDataset(Dataset):
     def __init__(
         self,
-        split_item_class,
+        split_item_class: Type[BaseModel],
         split_file: str | Path,
-        transform_dict: Dict = {},
-        split_ratio=float | Dict[str, float],
+        split_ratio: float | Dict[str, float],
+        transform_dict: OrderedDict = OrderedDict(),
     ):
         self.split_item_class = split_item_class
 
-        self.split_file: Path = None
-        self.items: Dict[str, List[self.sample_class]] = {}
+        self.split_file: Path = Path()  # will be assined in _update_from_split_file
+        self.items: Dict[str, List[split_item_class]] = {}
         self.n_samples: int = 0
 
-        self.split_ratio: Dict[str, float] = {}
-        self.transform_dict = transform_dict
+        self.split_ratio: Dict[Mode, float] = {}
+        self.transforms = init_transforms(transform_dict)
 
         self._update_from_split_file(split_file=split_file, split_ratio=split_ratio)
 
-    def process_split_item(self, item: BaseModel) -> BaseModel:
-        return item
+    def visualize(self, sample: BaseModel, plotter: SummaryWriter, **kwargs):
+        """
+        Visualize a sample in BaseDataset
+        """
+        pass
+
+    def process_split_item(self, item: BaseModel) -> Dict:
+        return item.model_dump(mode="python")
 
     def __getitem__(self, idx_tuple: Tuple[str, int]):
         key, idx = idx_tuple
-        return self.items[key][idx]
+        assert Mode(key), f"{key} must be a valide Mode"
+        key = Mode(key).value
+
+        _item = self.process_split_item(self.items[key][idx])
+
+        # apply transforms
+        return self.transforms(_item)
 
     def __len__(self):
         return self.n_samples
@@ -70,7 +86,7 @@ class BaseDataset(Dataset):
         with open(self.split_file, "r") as f:
             _dict = json.load(f)
             for k in _dict:
-                split_dict[Mode(k)] = _dict[k]
+                split_dict[Mode(k).value] = _dict[k]
         logger.debug(f"keys found in split_file: {list(split_dict.keys())}")
 
         _split_ratio = split_ratio if isinstance(split_ratio, dict) else {k: split_ratio for k in split_dict}
@@ -86,7 +102,7 @@ class BaseDataset(Dataset):
             n_items = int(np.ceil(len(item_list) * sr))
             item_list = item_list[:n_items]
 
-            self.items[mode] = [self.process_split_item(self.split_item_class(**fitem)) for fitem in item_list]
+            self.items[mode] = [self.split_item_class(**fitem) for fitem in item_list]
 
             logger.info(f"loaded {len(self.items[mode])} {mode} sample with split ratio: {sr:.2f}")
 

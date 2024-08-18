@@ -16,17 +16,18 @@ class DictSampler(RandomSampler):
         # TODO: Create a base Dataset class that uses dicts, and use that for data_source type annotation
         self,
         data_source: BaseDataset,
-        mode: str | Mode = Mode.TRAIN,
+        mode: str | Mode,
+        *,
         ratio: float = 1.0,
         shuffle: bool = True,
         **random_sampler_kwargs,
     ):
-        mode = mode if isinstance(mode, Mode) else Mode(mode)
+        mode = mode.value if isinstance(mode, Mode) else Mode(mode).value
         assert (
             mode in data_source.items
         ), f"{mode} must be a valid key in data_source._items: {data_source.items.keys()}"
 
-        if shuffle and mode != Mode.TRAIN:
+        if shuffle and mode != Mode.TRAIN.value:
             warnings.warn(
                 f"shuffling is available only in {Mode.TRAIN}. Setting shuffle=False for {mode} mode.",
                 category=RuntimeWarning,

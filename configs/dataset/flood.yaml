@@ -1,0 +1,16 @@
+name: floodsegment.dataloader.segment.FloodDataset
+params:
+  split_file: ../../data/flood-default-split.json
+  split_ratio: 1.0
+  transform_dict:
+    floodsegment.dataloader.transforms.ToTensor: {}
+    torchvision.transforms.v2.RandomCrop:
+      size: [64, 64]
+    floodsegment.dataloader.transforms.Split_RGB:
+      io_is_dict: True
+      keys:
+        - image
+      tkeys:
+        - image
+    floodsegment.dataloader.transforms.ToDtype:
+      dtype: torch.float32
